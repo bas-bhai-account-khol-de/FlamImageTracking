@@ -18,10 +18,8 @@ def getBestpoints(img_path,randomise = False):
     print("loaded Image " +str( image.shape) )
     img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     kp,desc =findkeypoints(img,False)
-    randomiseImage(img,False)
 
-    
-    for i in range(10):
+    for i in range(30):
         randomImage  =  randomiseImage(img,False)
         kpt,desct = findkeypoints(randomImage,False)
         matches = matcher.knnMatch(desc, desct, k=2)
@@ -39,7 +37,8 @@ def getBestpoints(img_path,randomise = False):
         desc = np.array(ndesc)
         print(len(kp))
         pass
-    drawKp(image,img_path,kp,True)
+    # drawKp(image,img_path,kp,True)
+    return kp,desc
 
 
 
@@ -55,7 +54,7 @@ def drawKp(img,img_path,kp ,show =False):
         cv2.destroyAllWindows()
         if k != 27:
             print("path is "+img_path)
-            getBestpoints(img_path,True)
+            getBestpoints(img_path,False)
             
 
 
@@ -90,12 +89,55 @@ def randomiseImage(image ,show =False,shift =200):
     return warped_image
 
 
+def drawCircleAtKp(image,points,show=False):
+    radius = 5  # Example radius
+    # Specify the color of the circle in BGR (Blue, Green, Red)
+    color = (0, 255, 0)  # Green
 
+    # Specify the thickness of the circle line
+    # Use -1 for thickness to fill the circle
+    thickness = 2  # Example thickness
+    # Draw the circle on the image
+
+    
+    for i in points:
+        cv2.circle(image, tuple([int(i[0]),int(i[1])]), radius, color, thickness)
+    return image
+
+
+
+def createHomographies(image,kp,count =-1,show=True):
+    n=len(kp)
+    if count>0:
+        n=count
+    points   = []
+    for i in range(n):
+        points.append([kp[i].pt[0],kp[i].pt[1]])
+    shift=400
+    points = np.array(points,dtype=float)
+    h, w = image.shape[:2]
+    pts_src = np.array([[0, 0], [w-1, 0], [w-1, h-1], [0, h-1]], dtype=float)
+    pts_dst = pts_src + np.random.rand(4, 2) * shift - (shift/2)  # Adjust the range according to your needs
+    H, _ = cv2.findHomography(pts_src, pts_dst)
+    warped_image = cv2.warpPerspective(image, H, (w, h))
+    transformed_points = cv2.perspectiveTransform(np.array([points], dtype=np.float32), H)
+    # print("number to draw is " + str(transformed_points.shape))
+    drawnImage = drawCircleAtKp(warped_image,transformed_points[0],True)
+    if show:
+        print("showing")
+        cv2.imshow('Warped', drawnImage)
+        k = cv2.waitKey(0) & 0xFF
+        cv2.destroyAllWindows()
+        if k != 27:
+            createHomographies(image,kp,count,show)
 
 
 
 def test():
-    getBestpoints("test/img/cinema.jpeg")
+    kp ,d = getBestpoints("test/img/cinema.jpeg")
+    image  = cv2.imread("test/img/cinema.jpeg")
+    createHomographies(image,kp,-1,True)
+
 
 
 
