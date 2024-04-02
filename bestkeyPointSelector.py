@@ -15,17 +15,33 @@ def getBestpoints(img_path):
     kp,desc =findkeypoints(img,False)
     randomiseImage(img,False)
 
-    for i in range(100):
-        
+    matcher = cv2.DescriptorMatcher_create(cv2.DescriptorMatcher_BRUTEFORCE)
+    for i in range(10):
+        randomImage  =  randomiseImage(img,False)
+        kpt,desct = findkeypoints(randomImage,False)
+        matches = matcher.knnMatch(desc, desct, k=2)
+        nkp = []
+        ndesc =[]
+        good_matches = []
+        ratio_thresh = 0.75  # Lowe's ratio test
+        for m, n in matches:
+            if m.distance < ratio_thresh * n.distance:
+                good_matches.append(m)
+        for m in good_matches:
+            nkp.append(kp[m.queryIdx])
+            ndesc.append(desc[m.queryIdx])
+            
+        kp=tuple(nkp)
+        desc = np.array(ndesc)
+        print(len(kp))
         pass
-    print(len(kp))
 
 
 
 
 
 def findkeypoints(gray_image , show =False):
-    orb = cv2.ORB_create(100)
+    orb = cv2.ORB_create(1000)
     # Detect keypoints
     keypoints ,  discriptor = orb.detectAndCompute (gray_image, None)
     # Draw keypoints
