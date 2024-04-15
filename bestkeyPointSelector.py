@@ -6,9 +6,15 @@ import numpy as np
 
 
 
-resize =800
-targetResize = 800
-matcher = cv2.DescriptorMatcher_create(cv2.DescriptorMatcher_BRUTEFORCE)
+
+resize =800 #main image size
+targetResize = 800 # target image size
+
+
+matcher = cv2.DescriptorMatcher_create(cv2.DescriptorMatcher_BRUTEFORCE) #image matcher
+
+
+#find kp that are invariant to random rotations
 def getBestpoints(img_path,randomise = False):
     # image= cv2.imread(img_path)
     image = resize_image_maintain_aspect_ratio(image_path="test/img/cinema.jpeg",desired_width= resize)
