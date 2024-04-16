@@ -25,7 +25,7 @@ def getBestpoints(img_path,randomise = False):
     img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     kp,desc =findkeypoints(img,False)
 
-    for i in range(20):
+    for i in range(200):
         # randomImage  =  randomiseImage(img,False)
         randomImage  =  randomiseImage(resize_image_maintain_aspect_ratio(img=img,desired_width=targetResize),False)
         kpt,desct = findkeypoints(randomImage,False)
@@ -33,7 +33,7 @@ def getBestpoints(img_path,randomise = False):
         nkp = []
         ndesc =[]
         good_matches = []
-        ratio_thresh = 0.9  # Lowe's ratio test
+        ratio_thresh = 0.95  # Lowe's ratio test
         for m, n in matches:
             if m.distance < ratio_thresh * n.distance:
                 good_matches.append(m)
@@ -66,7 +66,7 @@ def drawKp(img,img_path,kp ,show =False):
 
 
 def findkeypoints(gray_image , show =False):
-    # orb = cv2.ORB_create(1000)
+    # orb = cv2.ORB_create(5000)
     orb = cv2.SIFT_create(5000)
     # Detect keypoints
     keypoints ,  discriptor = orb.detectAndCompute (gray_image, None)
@@ -183,5 +183,12 @@ def resize_image_maintain_aspect_ratio(image_path=None, img=None,desired_width=N
 
 
 
+def Prob():
+    from math import comb
+    n_f = 20 ##condition
+    t = 0.4
+    x = comb(n_f,0)*pow(1-t,n_f) +  comb(n_f,1)*pow(1-t,n_f -1) * pow(t,1) + comb(n_f,2)*pow(1-t,n_f -2) * pow(t,2) + comb(n_f,3)*pow(1-t,n_f -3) * pow(t,3)
+    print(1-x)
+# test()
+Prob()
 
-test()
