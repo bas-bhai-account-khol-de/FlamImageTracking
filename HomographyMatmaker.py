@@ -11,7 +11,15 @@ roation  = random.randint(15,1000)
 window_size =640
 r_scn = 1
 screen_ratio=2 #screen pixel ratio
+output =cv2.imread('output.png')
+final_points = []
+points=[]
 
+def draw_circle(event, x, y, flags, param):
+    print('Helo')
+    if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click
+        print(f"Mouse clicked at: ({x}, {y})")
+        
 def main():
     # Initialize GLFW
     if not glfw.init():
@@ -111,10 +119,16 @@ def main():
     glEnableVertexAttribArray(1)
     
     #texture setup
+    global points
     image,points =getMarkedIMageandPoints()
+    points = [[x[0],x[1]] for x in points]
     texture_id   = create_texture(image)
 #     # Loop until the user closes the window
     glfw.set_mouse_button_callback(window, mouse_button_callback)
+    count =0
+    reference=cv2.imread('keypoints.jpg')
+    
+    cv2.imshow("reference ",reference)
     while not glfw.window_should_close(window):
         # Render here
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -135,8 +149,54 @@ def main():
 
         # Poll for and process events
         glfw.poll_events()
-
-    glfw.terminate()
+        if count < 4 :
+            width, height = glfw.get_window_size(window)
+            img=capture_image(width,height)
+            save_image(img, 'output.png')
+            global output
+            output = cv2.imread('output.png')
+            
+            
+        if(count == 20):
+            # cv2.destroyAllWindows()
+            # glfw.terminate()
+            # break
+            pass
+        cv2.imshow("destination ",output)
+        
+        #save image
+        
+        count +=1
+        
+        
+        
+        
+    points = points[:len(final_points)]
+    homo,_ = cv2.findHomography(640*np.float32(points),640*np.float32(final_points))
+    
+    print(homo)
+    print(points)
+    print(final_points)
+    w,h =glfw.get_window_size(window)
+    image = cv2.resize(image,(w,h))
+    final_image =cv2.warpPerspective(image,homo,(w,h))
+    cv2.imshow('final image',final_image)
+    cv2.waitKey(0)
+    
+    # global output
+    # output = cv2.imread('output.png')
+    # reference=cv2.imread('keypoints.jpg')
+    # cv2.namedWindow('destination')
+    
+    
+    # while True:
+    #     # cv2.imshow("reference ",reference)
+    #     cv2.imshow("destination ",output)
+    #     cv2.setMouseCallback('destination',draw_circle)
+    #     if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to quit
+    #         break
+    # exit()
+    return
 
 def compile_shader(shader_type, source):
     shader = glCreateShader(shader_type)
@@ -150,7 +210,7 @@ def compile_shader(shader_type, source):
 
 def extra(program):
     global roation
-    roation = -0.4
+    roation = -0.5
     roation1 =0
     rotMatz =m.rotate(roation/2,m.vec3(0,0,1))
     rotMaty =m.rotate(roation/3,m.vec3(0,1,0))
@@ -166,7 +226,7 @@ def extra(program):
     # test=m.transpose(test)
 
 
-    rotMat =  pers   * tranz * rotMaty
+    rotMat =  pers   * tranz 
     test2 = rotMat * m.vec4(0.5,0.5,0,1)
     test = rotMat * test
     # global roation
@@ -231,12 +291,24 @@ def save_image(image, filename):
 
 def mouse_button_callback(window, button, action, mods):
     if button == glfw.MOUSE_BUTTON_LEFT and action == glfw.PRESS:
-        print("Left mouse button pressed" +str(glfw.get_cursor_pos(window)))
-        width, height = glfw.get_window_size(window)
-        img=capture_image(width,height)
-        save_image(img, 'output.png')
+        global points
+        global final_points
+        if(len(final_points) >= len(points)):
+            return
+        w,h=glfw.get_cursor_pos(window)
+        W,H =  glfw.get_window_size(window)
+        final_points.append([w/W,h/H])
+        print(points)
+        print(final_points)
+        w = screen_ratio *w
+        h= screen_ratio *h
+        print("Left mouse button pressed "+str(w) + " " +str(h) )
+        cv2.circle(output,(int(w),int(h)),6,(0,0,255),-1)
+       
     elif button == glfw.MOUSE_BUTTON_RIGHT and action == glfw.PRESS:
         print("Right mouse button pressed")
+        
+
     
 
 

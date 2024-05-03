@@ -23,7 +23,7 @@ def getMarkedIMageandPoints():
     res_orig_image  =  resizeRatio(orig_image,finalwidth)
     ratio  =  res_orig_image.shape[0]/res_orig_image.shape[1]
 
-    points  =  [ ([random.random(),random.random(),0,1]) for i in range(8)]
+    points  =  [ ([random.random(),random.random(),0,1]) for i in range(10)]
 
     print(points)
 
@@ -33,7 +33,8 @@ def getMarkedIMageandPoints():
     # fn =applyTransform(resizeRatio(orig_image,finalwidth),points,trasnform)
 
 
-    cv2.imshow('orignal image',marked_original_image)
+    # cv2.imshow('orignal image',marked_original_image)
+    cv2.imwrite('keypoints.jpg',marked_original_image)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
     return (resizeRatio(orig_image,finalwidth),points)
