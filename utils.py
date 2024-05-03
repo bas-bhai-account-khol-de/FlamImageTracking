@@ -50,8 +50,9 @@ def createTrasnform():
 def drawPoints(img ,points ):
      image = img
      h,w,_ =  img.shape
-     for point in points:
-         cv2.circle(image,(int(((point[0])) *w),int(((point[1])) *h)),6,(0,0,255),-1)
+     for i,point in enumerate(points):
+        #  cv2.circle(image,(int(((point[0])) *w),int(((point[1])) *h)),6,(0,0,255),-1)
+        cv2.putText(image,str(i),(int(((point[0])) *w),int(((point[1])) *h)),cv2.FONT_HERSHEY_SIMPLEX,1,(0, 0, 255),2)
      return image
 
 

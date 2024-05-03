@@ -9,7 +9,8 @@ import utils
 
 roation  = random.randint(15,1000)
 window_size =640
-r_scn = 2
+r_scn = 1
+screen_ratio=2 #screen pixel ratio
 
 def main():
     # Initialize GLFW
@@ -19,9 +20,11 @@ def main():
     glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
     glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, glfw.TRUE)  # Required on Mac
     glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE) 
-
+    global r_scn
     # Create a windowed mode window and its OpenGL context
-    window = glfw.create_window(window_size * r_scn, window_size, "Hello Triangle", None, None)
+    window = glfw.create_window(int(window_size * r_scn), window_size, "Hello Triangle", None, None)
+    w,h =  glfw.get_window_size(window)
+    r_scn = w/h
     if not window:
         glfw.terminate()
         return
@@ -108,7 +111,7 @@ def main():
     glEnableVertexAttribArray(1)
     
     #texture setup
-    image =getMarkedIMageandPoints()
+    image,points =getMarkedIMageandPoints()
     texture_id   = create_texture(image)
 #     # Loop until the user closes the window
     glfw.set_mouse_button_callback(window, mouse_button_callback)
@@ -155,7 +158,7 @@ def extra(program):
 
     tranx= m.translate(m.vec3(-(roation%3)/6,0,0))
     trany = m.translate(m.vec3(0,-2*(roation%3)/6,0))
-    tranz =  m.translate(m.vec3(0,0,-2))
+    tranz =  m.translate(m.vec3(0,0,-1.1))
 
     pers = m.perspective(m.radians(50),r_scn,0.01,40)
     
@@ -163,7 +166,7 @@ def extra(program):
     # test=m.transpose(test)
 
 
-    rotMat =  pers   * tranz 
+    rotMat =  pers   * tranz * rotMaty
     test2 = rotMat * m.vec4(0.5,0.5,0,1)
     test = rotMat * test
     # global roation
@@ -212,9 +215,26 @@ def create_texture(image):
     return texture_id
 
 
+def capture_image(width, height):
+    glReadBuffer(GL_FRONT)
+    height =  screen_ratio*height
+    width = screen_ratio*width
+    data = glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE)
+    image = np.frombuffer(data, dtype=np.uint8).reshape(height, width, 4)
+    image = np.flip(image, axis=0)  # Flip the image vertically
+    return image
+
+def save_image(image, filename):
+    image = Image.fromarray(image)
+    image.save(filename)
+    # extra()
+
 def mouse_button_callback(window, button, action, mods):
     if button == glfw.MOUSE_BUTTON_LEFT and action == glfw.PRESS:
         print("Left mouse button pressed" +str(glfw.get_cursor_pos(window)))
+        width, height = glfw.get_window_size(window)
+        img=capture_image(width,height)
+        save_image(img, 'output.png')
     elif button == glfw.MOUSE_BUTTON_RIGHT and action == glfw.PRESS:
         print("Right mouse button pressed")
     
@@ -225,6 +245,7 @@ def mouse_button_callback(window, button, action, mods):
 print('hello')
 # roation=0
 main()
-    # extra()
+
+
 
 

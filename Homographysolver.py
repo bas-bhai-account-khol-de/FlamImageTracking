@@ -36,4 +36,4 @@ def getMarkedIMageandPoints():
     cv2.imshow('orignal image',marked_original_image)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
-    return resizeRatio(orig_image,finalwidth)
+    return (resizeRatio(orig_image,finalwidth),points)
