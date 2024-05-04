@@ -210,7 +210,7 @@ def compile_shader(shader_type, source):
 
 def extra(program):
     global roation
-    roation = -0.5
+    roation = -0.9
     roation1 =0
     rotMatz =m.rotate(roation/2,m.vec3(0,0,1))
     rotMaty =m.rotate(roation/3,m.vec3(0,1,0))
@@ -226,7 +226,7 @@ def extra(program):
     # test=m.transpose(test)
 
 
-    rotMat =  pers   * tranz 
+    rotMat =  pers   * tranz * rotMaty
     test2 = rotMat * m.vec4(0.5,0.5,0,1)
     test = rotMat * test
     # global roation

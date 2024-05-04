@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+     
+      "moduleResolution": "node",
+      "allowJs": true,
+      "checkJs": false,
+      "outDir": "./js", // Specifies the output folder for all emitted files
+      "target": "es6", // Specify ECMAScript target version
+      "strict": false // Enable all strict type-checking options
+    },
+    "include": [
+      "src/**/*", // Include all files in the src directory
+      "node_modules/*"
+    ]
+  }
