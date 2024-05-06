@@ -8,6 +8,13 @@
       "target": "es6", // Specify ECMAScript target version
       "strict": true // Enable all strict type-checking options
     },
+    "typedocOptions": {
+
+      "entryPointStrategy": "expand",
+      "name": "JS Proofs and solver doc",
+      "entryPoints": ["src/"],
+      "out": "docs"
+  },
     "include": [
       "src/**/*", // Include all files in the src directory
       "node_modules/*"
