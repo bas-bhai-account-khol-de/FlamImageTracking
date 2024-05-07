@@ -18,8 +18,9 @@ let controlEnv = util.Create3DScene(controllerCanvs);
 env.renderer.setClearColor('blue'); // set clear color of canvs
 env.camera.translateZ(1.0); // move camera one unit
 controlEnv.renderer.setClearColor('blue'); // set clear color of canvs
-controlEnv.camera.translateZ(1.0); // move camera one unit
+controlEnv.camera.translateZ(0.0); // move camera one unit
 let points = [];
+let controlTransformMat = new THREE.Matrix4();
 // add a image as tedxture on canvas
 util.addTextureOnCanvas(textureCanvas, 'https://storage.googleapis.com/avatar-system/test/image-noise.jpg', () => {
     var ctx = textureCanvas.getContext('2d');
@@ -33,9 +34,10 @@ util.addTextureOnCanvas(textureCanvas, 'https://storage.googleapis.com/avatar-sy
         ctx === null || ctx === void 0 ? void 0 : ctx.fill();
         ctx === null || ctx === void 0 ? void 0 : ctx.closePath();
     }
-    var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points);
-    threeDpoints.forEach((pos) => { util.putASphereInEnvironment(env, 0.005, pos); });
-    console.log('displayed poinsts in 3d', threeDpoints);
+    controlTransformMat.makeRotationY(0.5);
+    controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(0.5));
+    var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points, controlTransformMat);
+    threeDpoints.forEach((pos) => { util.putASphereInEnvironment(env, 0.01, pos); });
 });
 /**
  * @abstract this function adds a perfectly fitting plane in scen if camera is 1 unit awaay
@@ -64,7 +66,9 @@ function PrequisiteAnimate() {
     return __awaiter(this, void 0, void 0, function* () {
         plane = yield addimageToSceneWithTexture('https://storage.googleapis.com/avatar-system/test/image-noise.jpg', env);
         plane2 = yield addimageToSceneWithTexture('https://storage.googleapis.com/avatar-system/test/image-noise.jpg', controlEnv);
-        //generate points on image
+        //get temporary transform
+        plane2.applyMatrix4(controlTransformMat);
+        plane === null || plane === void 0 ? void 0 : plane.applyMatrix4(controlTransformMat);
         animate();
     });
 }
@@ -75,7 +79,10 @@ function animate() {
     return __awaiter(this, void 0, void 0, function* () {
         env.renderer.render(env.scene, env.camera);
         controlEnv.renderer.render(controlEnv.scene, controlEnv.camera);
-        // plane?.rotateY(0.1)
+        plane === null || plane === void 0 ? void 0 : plane.applyMatrix4(plane === null || plane === void 0 ? void 0 : plane.matrixWorld.invert());
+        plane2 === null || plane2 === void 0 ? void 0 : plane2.applyMatrix4(plane2 === null || plane2 === void 0 ? void 0 : plane2.matrixWorld.invert());
+        plane === null || plane === void 0 ? void 0 : plane.applyMatrix4(controlTransformMat);
+        plane2 === null || plane2 === void 0 ? void 0 : plane2.applyMatrix4(controlTransformMat);
         requestAnimationFrame(animate);
     });
 }

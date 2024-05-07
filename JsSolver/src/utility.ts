@@ -35,7 +35,7 @@ export function addCanvasOfSize(doc:Document,w:number = 1000,h:number =1000) :  
 export function Create3DScene(canvas : HTMLCanvasElement) :Environment {
     const scene = new THREE.Scene();
     const fov = 40
-    const camera = new THREE.PerspectiveCamera(fov,1, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(fov,canvas.width/canvas.height, 0.1, 1000);
     camera.position.z = 0;
     const renderer = new THREE.WebGLRenderer({canvas:canvas});
     return {camera,renderer,scene,fov}
@@ -69,7 +69,7 @@ export function addTextureOnCanvas(canvas :HTMLCanvasElement,url:string,cb:Calla
  * @param points  the scren points in 2d coord in range (0,1) we want to project
  * @returns 
  */
-export function getReprojectedPointsAfterTrasnform(env:Environment,points: number[][]) : THREE.Vector3[]{
+export function getReprojectedPointsAfterTrasnform(env:Environment,points: number[][],transform:THREE.Matrix4 = new THREE.Matrix4()) : THREE.Vector3[]{
 
     //convert point at unit distance into 3d space
     var s  = 2* Math.atan((env.fov/2)*Math.PI/180)
@@ -77,7 +77,24 @@ export function getReprojectedPointsAfterTrasnform(env:Environment,points: numbe
     for(var i =0;i<points.length;i++){
         ScreenPoints.push(new THREE.Vector3(setPrecision((points[i][0]/globalPrecisionFactor-0.5)*s),setPrecision((0.5-points[i][1]/globalPrecisionFactor)*s),0))
     }
-    return ScreenPoints;
+
+    ScreenPoints=ScreenPoints.map((vec)=>{
+        var point  = vec.applyMatrix4(transform)
+        return point
+    })
+
+   
+
+    // console.log("  scrren point sin 3d" , ScreenPoints)
+    // ScreenPoints= ScreenPoints.map((vec)=>{
+    //     const proj =  vec.projectOnPlane(new THREE.Vector3(0,0,-1))
+    //     console.log(proj)
+    //     return proj
+    //     // return  new THREE.Vector3(setPrecision((pointOnscreen.x)*s),setPrecision((pointOnscreen.y)*s),0)
+    // })
+
+    console.log("  scrren point sin 2d" ,ScreenPoints)
+    return ScreenPoints
 }
 
 
