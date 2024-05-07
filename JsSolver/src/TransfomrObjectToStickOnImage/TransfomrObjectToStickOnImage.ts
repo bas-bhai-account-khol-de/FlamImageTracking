@@ -9,7 +9,7 @@ let controllerCanvs = document.getElementById('controller') as HTMLCanvasElement
 let env = util.Create3DScene(renderCanvas)
 let controlEnv = util.Create3DScene(controllerCanvs)
 env.renderer.setClearColor('blue') // set clear color of canvs
-env.camera.translateZ(1.0) // move camera one unit
+env.camera.translateZ(0.0) // move camera one unit
 controlEnv.renderer.setClearColor('blue') // set clear color of canvs
 controlEnv.camera.translateZ(0.0) // move camera one unit
 
@@ -32,7 +32,9 @@ util.addTextureOnCanvas(textureCanvas, 'https://storage.googleapis.com/avatar-sy
             ctx?.closePath();
         }
         controlTransformMat.makeRotationY(0.5)
+        
         controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(0.5))
+        controlTransformMat.premultiply(new THREE.Matrix4().makeTranslation(0,0,-1)) // needed to shift points by 1
         var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points,controlTransformMat)
         threeDpoints.forEach((pos) => { util.putASphereInEnvironment(env, 0.01, pos) });
         
