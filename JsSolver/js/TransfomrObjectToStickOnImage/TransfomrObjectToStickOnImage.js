@@ -36,6 +36,7 @@ function setUpImages() {
         util.addTextureOnCanvas(textureCanvas, baseImage, () => {
             var ctx = textureCanvas.getContext('2d');
             points = util.generateNPointsNormalized();
+            document.getElementById('originalpoint').innerHTML = points.join('<br>');
             var w = textureCanvas.width;
             var h = textureCanvas.height;
             for (var i = 0; i < points.length; i++) {
@@ -65,7 +66,6 @@ function UpdateImageAfterTranform() {
         threeDpoints.forEach((val) => {
             pointsToScreen.push([((val.x / s) + 0.5), (0.5 - (val.y / s))]);
         });
-        console.log(threeDpoints);
         var w = newImageCanvas.width;
         var h = newImageCanvas.height;
         var ctx = newImageCanvas.getContext('2d');
@@ -83,9 +83,10 @@ function UpdateImageAfterTranform() {
         var newReprojectedPlane = yield addimageToSceneWithTexture(controlEnv.renderer.domElement.toDataURL(), newrePorjectedImageEnv, 1);
         newReprojectedPlane === null || newReprojectedPlane === void 0 ? void 0 : newReprojectedPlane.translateZ(-1);
         newReprojectedPlane === null || newReprojectedPlane === void 0 ? void 0 : newReprojectedPlane.scale.set(controllerCanvs.width / controllerCanvs.height, 1, 1);
-        pointsToScreen = pointsToScreen.map((val) => { return [util.globalPrecisionFactor * val[0], util.globalPrecisionFactor * val[1]]; });
+        pointsToScreen = pointsToScreen.map((val) => { return [Math.floor(util.globalPrecisionFactor * val[0]), Math.floor(util.globalPrecisionFactor * val[1])]; });
+        document.getElementById('transformedpoint').innerHTML = pointsToScreen.join('<br>');
         var threeDpoints = util.getReprojectedPointsAfterTrasnform(newrePorjectedImageEnv, pointsToScreen, new THREE.Matrix4(), false);
-        threeDpoints.forEach((pos) => { pos.z = -1, pos.x = pos.x, pos.y = pos.y, util.putASphereInEnvironment(newrePorjectedImageEnv, 0.01, pos); });
+        threeDpoints.forEach((pos) => { pos.z = -1; util.putASphereInEnvironment(newrePorjectedImageEnv, 0.01, pos); });
     }));
 }
 /**
@@ -94,7 +95,7 @@ function UpdateImageAfterTranform() {
  * @param env Enviournment type 3d enviournment
  * @returns plane
  */
-function addimageToSceneWithTexture(textureURL, env, opacity = 0.5) {
+function addimageToSceneWithTexture(textureURL, env, opacity = 1) {
     return __awaiter(this, void 0, void 0, function* () {
         let side = 2 * Math.tan((env.fov / 2) * Math.PI / 180);
         const planeGeometry = new THREE.PlaneGeometry(side, side); // Width, height
