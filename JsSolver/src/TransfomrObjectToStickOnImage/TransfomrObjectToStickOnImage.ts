@@ -3,7 +3,8 @@ import * as util from '../utility'
 import * as THREE from 'three'
 
 
-const baseImage: string = 'https://storage.googleapis.com/avatar-system/test/white-square-background-d28l8p1i4p1xnysj.jpg'
+// const baseImage: string = 'https://storage.googleapis.com/avatar-system/test/white-square-background-d28l8p1i4p1xnysj.jpg'
+const baseImage: string = 'https://storage.googleapis.com/avatar-system/test/guide.webp'
 console.log('TransfomrObjectToStickOnImage')
 let textureCanvas = document.getElementById('orignalImageCanvas') as HTMLCanvasElement
 let renderCanvas = document.getElementById('trasnformedImage') as HTMLCanvasElement
@@ -29,7 +30,7 @@ let controlTransformMat: THREE.Matrix4 = new THREE.Matrix4()
 async function setUpImages() {
     controlTransformMat.makeRotationY(Math.random())
 
-    controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random()));
+    controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random())).multiply(new THREE.Matrix4().makeTranslation(Math.random()-0.5,Math.random()-0.5,-1*Math.random()));
     //with traslation
     // controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random())).multiply(new THREE.Matrix4().makeTranslation(2*Math.random()-1,2*Math.random()-1,-1*Math.random()))
     controlTransformMat.premultiply(new THREE.Matrix4().makeTranslation(0, 0, -1)) // needed to shift points by 1
