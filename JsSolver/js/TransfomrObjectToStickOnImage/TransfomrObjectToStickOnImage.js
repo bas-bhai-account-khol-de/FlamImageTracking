@@ -83,8 +83,13 @@ function UpdateImageAfterTranform() {
         var newReprojectedPlane = yield addimageToSceneWithTexture(controlEnv.renderer.domElement.toDataURL(), newrePorjectedImageEnv, 1);
         newReprojectedPlane === null || newReprojectedPlane === void 0 ? void 0 : newReprojectedPlane.translateZ(-1);
         newReprojectedPlane === null || newReprojectedPlane === void 0 ? void 0 : newReprojectedPlane.scale.set(controllerCanvs.width / controllerCanvs.height, 1, 1);
-        pointsToScreen = pointsToScreen.map((val) => { return [Math.floor(util.globalPrecisionFactor * val[0]), Math.floor(util.globalPrecisionFactor * val[1])]; });
+        var truth = [];
+        truth = pointsToScreen;
+        truth = truth.map((val) => { return [Math.floor(util.globalPrecisionFactor * val[0]), Math.floor(util.globalPrecisionFactor * val[1])]; });
+        pointsToScreen = pointsToScreen.map((val) => { return [Math.floor(h * val[0] - (h - w) / 2), Math.floor(h * val[1])]; });
+        pointsToScreen = util.AdjustedPointFromImagePoints(pointsToScreen, newImageCanvas.width, newImageCanvas.height);
         document.getElementById('transformedpoint').innerHTML = pointsToScreen.join('<br>');
+        console.log(truth);
         var threeDpoints = util.getReprojectedPointsAfterTrasnform(newrePorjectedImageEnv, pointsToScreen, new THREE.Matrix4(), false);
         threeDpoints.forEach((pos) => { pos.z = -1; util.putASphereInEnvironment(newrePorjectedImageEnv, 0.01, pos); });
     }));

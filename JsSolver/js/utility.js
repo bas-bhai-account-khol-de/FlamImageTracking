@@ -31,6 +31,11 @@ export function Create3DScene(canvas) {
     const renderer = new THREE.WebGLRenderer({ canvas: canvas });
     return { camera, renderer, scene, fov };
 }
+/**
+ * @description generates n point between 0 and 1
+ * @param n
+ * @returns
+ */
 export function generateNPointsNormalized(n = 10) {
     let arr = [];
     for (var i = 0; i < n; i++) {
@@ -99,4 +104,16 @@ export function putASphereInEnvironment(env, rad, location) {
  */
 export function RenderEnvironment(env) {
     env.renderer.render(env.scene, env.camera);
+}
+/**
+ *
+ * @param imagePoints @description this convers image points such that we can input point to get projected point
+ * @param width
+ * @param height
+ */
+export function AdjustedPointFromImagePoints(imagePoints, width, height) {
+    var ratio = width / height;
+    var changeRatio = globalPrecisionFactor / height;
+    var adjustedPoints = imagePoints.map((val) => { return [val[0] * changeRatio - (changeRatio * width / 2 - globalPrecisionFactor / 2), val[1] * changeRatio]; }); // all point in image of height global precision
+    return adjustedPoints;
 }
