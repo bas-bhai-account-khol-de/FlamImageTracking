@@ -12,9 +12,14 @@
     <script type="module" src="../js/TransfomrObjectToStickOnImage/TransfomrObjectToStickOnImage.js"></script>
     <h1>Assuming camera always at zero</h1>
     <div style="display: flex; align-items: flex-start; flex-direction: row; width: 100%;" >
-        <canvas id="orignalImageCanvas" height="300" width="300" ></canvas>
-        <canvas id = "controller"  height="200" width="200" style="align-self: center; margin: auto;"></canvas>
-        <canvas id="trasnformedImage" height="300" width="300" style=" margin-left: auto;right: 0;"></canvas>
+        <div><h3>this show the original image with keypoint on a 2d image</h3><canvas id="orignalImageCanvas" height="300" width="300" ></canvas></div>
+        <div style="align-self: center; margin: auto;"><h3>this shows how the image tranformed in 3d enviournment</h3><canvas id = "controller"  height="200" width="400" ></canvas></div>
+        <div  style=" margin-left: auto;right: 0;"><h3>this shows how the image tranformed in 3d enviournment and point a they would appear on screen</h3><canvas id="trasnformedImage" height="400" width="200"></canvas></div>
+    </div>
+    <div style="display: flex; align-items: flex-start; flex-direction: row; width: 100%;" >
+        <div><h3>this shows the image seen as per camera in 2d image</h3><canvas id="newImageCanvas" height="200" width="400" ></canvas></div>
+        <div><h3>this shows the background a original image and points in 3d space for all z=-1</h3><canvas id = "orignalIn3D"  height="400" width="400" style="align-self: center; margin: auto;"></canvas></div>
+        <div><h3>this shows the background a trasnformed image and points in 3d space for all z=-1</h3><canvas id="newrePorjectedImage" height="400" width="400" style=" margin-left: auto;right: 0;"></canvas></div>
     </div>
     <div style="width: 100%; ">
         

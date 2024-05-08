@@ -64,12 +64,14 @@ export function addTextureOnCanvas(canvas :HTMLCanvasElement,url:string,cb:Calla
 }
 
 /**
- * 
+ * @description thi fucntion traform all point on screen  to a 3d transform
  * @param env 3D environment where we want to project
  * @param points  the scren points in 2d coord in range (0,1) we want to project
+ * @param transform the tranform of image 
+ * @param oncreen want points on creen or not
  * @returns 
  */
-export function getReprojectedPointsAfterTrasnform(env:Environment,points: number[][],transform:THREE.Matrix4 = new THREE.Matrix4()) : THREE.Vector3[]{
+export function getReprojectedPointsAfterTrasnform(env:Environment,points: number[][],transform:THREE.Matrix4   = new THREE.Matrix4(),oncreen=true) : THREE.Vector3[]{
 
     //convert point at unit distance into 3d space
     var s  = 2* Math.atan((env.fov/2)*Math.PI/180)
@@ -85,51 +87,24 @@ export function getReprojectedPointsAfterTrasnform(env:Environment,points: numbe
 
    
 
-    console.log("  scrren point sin 3d" , ScreenPoints)
-    ScreenPoints= ScreenPoints.map((vec)=>{
-        const projMat  = env.camera.projectionMatrix
-        var columnMatrix   = new THREE.Matrix4();
-        columnMatrix.set(
-            vec.x, 0, 0, 0,
-            vec.y, 0, 0, 0,
-            vec.z, 0, 0, 0,
-            1, 1, 1, 1
-        );
-        var fv= Math.tan((env.fov/2)*Math.PI/180)
+    if(oncreen)
+    {ScreenPoints= ScreenPoints.map((vec)=>{
+        
+       
         var customProj = new THREE.Matrix4().set(
             1,0,0,0,
             0,1,0,0,
             0,0,1,0,
             0,0,-1,0
         )
-        var tempMatProj= new THREE.Matrix4()
+     
         var vecPos = new THREE.Vector4(vec.x,vec.y,vec.z,1)
-        var truth= new THREE.Vector3(-1*vec.x/vec.z,-1*vec.y/vec.z,-1)
-        tempMatProj.copy(projMat)
         // vecPos.applyMatrix4(tempMatProj)
         vecPos.applyMatrix4(customProj)
-
         vecPos.divideScalar(vecPos.w)
-        // vecPos.divideScalar(vecPos.z)
-        console.log('truth',truth,1/s,s)
-        console.log('apply mat',vecPos)
-        console.log('diffrence ' , vecPos.x/truth.x,vecPos.y/truth.y,vecPos.z/truth.z,vecPos.w)
-
-        
-
-        //
-        tempMatProj.multiply(columnMatrix)
-        var mat = tempMatProj.elements
-        var colVector = new THREE.Vector4(mat[0],mat[1],mat[2],mat[3])
-        console.log('matrixmultiply',colVector)
-
-       
-        
-
         return new THREE.Vector3(vecPos.x,vecPos.y,vecPos.z)
-    })
+    })}
 
-    console.log("  scrren point sin 2d" ,ScreenPoints)
     return ScreenPoints
 }
 
@@ -149,3 +124,10 @@ export function putASphereInEnvironment(env : Environment,rad:number,location : 
     env.scene.add(sphere);
 }
 
+/**
+ * @description renders the enviournment
+ * @param env environment
+ */
+export function RenderEnvironment(env : Environment){
+    env.renderer.render(env.scene, env.camera);
+}

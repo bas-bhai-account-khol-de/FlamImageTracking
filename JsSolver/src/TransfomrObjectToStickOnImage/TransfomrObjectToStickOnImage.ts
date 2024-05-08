@@ -2,43 +2,104 @@ import { Environment } from '../utilTypes'
 import * as util from '../utility'
 import * as THREE from 'three'
 
+
+const baseImage: string = 'https://storage.googleapis.com/avatar-system/test/white-square-background-d28l8p1i4p1xnysj.jpg'
 console.log('TransfomrObjectToStickOnImage')
 let textureCanvas = document.getElementById('orignalImageCanvas') as HTMLCanvasElement
 let renderCanvas = document.getElementById('trasnformedImage') as HTMLCanvasElement
 let controllerCanvs = document.getElementById('controller') as HTMLCanvasElement
+let newImageCanvas = document.getElementById('newImageCanvas') as HTMLCanvasElement
+let newrePorjectedImage = document.getElementById('newrePorjectedImage') as HTMLCanvasElement
+let orignalIn3D = document.getElementById('orignalIn3D') as HTMLCanvasElement
 let env = util.Create3DScene(renderCanvas)
 let controlEnv = util.Create3DScene(controllerCanvs)
-env.renderer.setClearColor('blue') // set clear color of canvs
+let newrePorjectedImageEnv = util.Create3DScene(newrePorjectedImage)
+let orignalIn3DEnv = util.Create3DScene(orignalIn3D)
+
+
+env.renderer.setClearColor('red') // set clear color of canvs
 env.camera.translateZ(0.0) // move camera one unit
 controlEnv.renderer.setClearColor('blue') // set clear color of canvs
 controlEnv.camera.translateZ(0.0) // move camera one unit
 
 
-let points = []
+let points: number[][] = []
 let controlTransformMat: THREE.Matrix4 = new THREE.Matrix4()
 // add a image as tedxture on canvas
-util.addTextureOnCanvas(textureCanvas, 'https://storage.googleapis.com/avatar-system/test/image-noise.jpg',
+async function setUpImages() {
+    controlTransformMat.makeRotationY(0.5)
+    controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(0.5)).multiply(new THREE.Matrix4().makeRotationZ(0.6))
+    controlTransformMat.premultiply(new THREE.Matrix4().makeTranslation(0, 0, -1)) // needed to shift points by 1
+   
+    util.addTextureOnCanvas(textureCanvas, baseImage,
 
-    () => { // add rando points on image
-        var ctx = textureCanvas.getContext('2d')
-        points = util.generateNPointsNormalized();
-        var w = textureCanvas.width
-        var h = textureCanvas.height
-        for (var i = 0; i < points.length; i++) {
-            ctx?.beginPath();
-            ctx?.arc(w * points[i][0] / util.globalPrecisionFactor, h * points[i][1] / util.globalPrecisionFactor, 3, 0, Math.PI * 2);
+        () => { // add rando points on image
+            var ctx = textureCanvas.getContext('2d')
+            points = util.generateNPointsNormalized();
+            var w = textureCanvas.width
+            var h = textureCanvas.height
+            for (var i = 0; i < points.length; i++) {
+                ctx?.beginPath();
+                ctx?.arc(w * points[i][0] / util.globalPrecisionFactor, h * points[i][1] / util.globalPrecisionFactor, 3, 0, Math.PI * 2);
+                ctx!.fillStyle = 'blue';
+                ctx?.fill();
+                ctx?.closePath();
+            }
+
+            var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points, controlTransformMat, true)
+            threeDpoints.forEach((pos) => { util.putASphereInEnvironment(env, 0.01, pos) });
+
+
+            //draw original point
+            plane3?.translateZ(-1)
+            
+            var threeDpointsOrignal = util.getReprojectedPointsAfterTrasnform(orignalIn3DEnv, points, new THREE.Matrix4(), false)
+            threeDpointsOrignal.forEach((pos) => { pos.z = -1; util.putASphereInEnvironment(orignalIn3DEnv, 0.01, pos) });
+
+            setTimeout(() => { UpdateImageAfterTranform() }, 1000)
+
+
+
+        });
+
+
+}
+function UpdateImageAfterTranform() {
+    controlEnv.renderer.render(controlEnv.scene, controlEnv.camera);
+
+    util.addTextureOnCanvas(newImageCanvas, controlEnv.renderer.domElement.toDataURL(), async () => {
+
+
+        var s = 2 * Math.atan((env.fov / 2) * Math.PI / 180)
+        var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points, controlTransformMat, true)
+        // convert points on screen
+        var pointsToScreen: number[][] = []
+        threeDpoints.forEach((val) => {
+            pointsToScreen.push([((val.x / s) + 0.5), (0.5 - (val.y / s))])
+        })
+        console.log(threeDpoints)
+        var w = newImageCanvas.width
+        var h = newImageCanvas.height
+        var ctx = newImageCanvas.getContext('2d')
+        for (var i = 0; i < pointsToScreen.length; i++) {
+           try{ ctx?.beginPath();
+            ctx?.arc( h* pointsToScreen[i][0] - (h-w)/2, h * pointsToScreen[i][1], 3, 0, Math.PI * 2);
             ctx!.fillStyle = 'blue';
             ctx?.fill();
-            ctx?.closePath();
+            ctx?.closePath();}catch{}
         }
-        controlTransformMat.makeRotationY(0.5)
-        
-        controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(0.5))
-        controlTransformMat.premultiply(new THREE.Matrix4().makeTranslation(0,0,-1)) // needed to shift points by 1
-        var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points,controlTransformMat)
-        threeDpoints.forEach((pos) => { util.putASphereInEnvironment(env, 0.01, pos) });
-        
-    });
+
+        controlEnv.renderer.render(controlEnv.scene, controlEnv.camera);
+        var newReprojectedPlane = await addimageToSceneWithTexture(controlEnv.renderer.domElement.toDataURL(), newrePorjectedImageEnv, 1)
+        newReprojectedPlane?.translateZ(-1);
+        newReprojectedPlane?.scale.set(controllerCanvs.width/controllerCanvs.height,1,1)
+        pointsToScreen = pointsToScreen.map((val) => { return [util.globalPrecisionFactor * val[0], util.globalPrecisionFactor * val[1]] })
+        var threeDpoints = util.getReprojectedPointsAfterTrasnform(newrePorjectedImageEnv, pointsToScreen, new THREE.Matrix4(), false)
+        threeDpoints.forEach((pos) => { pos.z = -1, pos.x = pos.x, pos.y = pos.y, util.putASphereInEnvironment(newrePorjectedImageEnv, 0.01, pos) });
+
+
+    })
+}
 
 
 
@@ -48,12 +109,12 @@ util.addTextureOnCanvas(textureCanvas, 'https://storage.googleapis.com/avatar-sy
  * @param env Enviournment type 3d enviournment
  * @returns plane 
  */
-async function addimageToSceneWithTexture(textureURL: string, env: Environment): Promise<THREE.Mesh> {
+async function addimageToSceneWithTexture(textureURL: string, env: Environment, opacity: number = 0.5): Promise<THREE.Mesh> {
     let side = 2 * Math.tan((env.fov / 2) * Math.PI / 180)
     const planeGeometry = new THREE.PlaneGeometry(side, side); // Width, height
     let texture = await new THREE.TextureLoader().load(textureURL);
     texture.colorSpace = THREE.SRGBColorSpace
-    const planeMaterial = new THREE.MeshBasicMaterial({ map: texture, color: 0xFFFFFF, side: THREE.DoubleSide });
+    const planeMaterial = new THREE.MeshBasicMaterial({ map: texture, color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, opacity: opacity });
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
     env.scene.add(plane)
     return plane
@@ -69,21 +130,25 @@ async function addimageToSceneWithTexture(textureURL: string, env: Environment):
 
 let plane: THREE.Mesh | null
 let plane2: THREE.Mesh | null
+let plane3: THREE.Mesh | null
 
 
 /**
  * @description preprocess prefor going into animation loop
  */
 async function PrequisiteAnimate() {
-    plane = await addimageToSceneWithTexture('https://storage.googleapis.com/avatar-system/test/image-noise.jpg', env)
-    plane2 = await addimageToSceneWithTexture('https://storage.googleapis.com/avatar-system/test/image-noise.jpg', controlEnv)
+    plane = await addimageToSceneWithTexture(baseImage, env)
+    plane2 = await addimageToSceneWithTexture(baseImage, controlEnv, 1)
+    plane3 = await addimageToSceneWithTexture(baseImage, orignalIn3DEnv, 1)
 
+
+    setUpImages()
     //get temporary transform
     plane2.applyMatrix4(controlTransformMat)
     // plane.visible=false
     plane?.applyMatrix4(controlTransformMat)
-    
-    
+
+
 
 
     animate()
@@ -97,14 +162,14 @@ async function PrequisiteAnimate() {
  * @description animation loop 
  */
 async function animate() {
-    env.renderer.render(env.scene, env.camera);
-    controlEnv.renderer.render(controlEnv.scene, controlEnv.camera);
+    util.RenderEnvironment(env)
+    util.RenderEnvironment(controlEnv)
+    util.RenderEnvironment(newrePorjectedImageEnv)
+    util.RenderEnvironment(orignalIn3DEnv)
 
-    plane?.applyMatrix4(plane?.matrixWorld.invert())
-    plane2?.applyMatrix4(plane2?.matrixWorld.invert())
-    plane?.applyMatrix4(controlTransformMat)
-    plane2?.applyMatrix4(controlTransformMat)
     requestAnimationFrame(animate)
+
+
 }
 
 
