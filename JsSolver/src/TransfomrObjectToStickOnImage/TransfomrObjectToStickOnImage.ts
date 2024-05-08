@@ -46,7 +46,7 @@ async function setUpImages() {
                 ctx?.closePath();
             }
 
-            var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points, controlTransformMat, true)
+            var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points, controlTransformMat, false)
             threeDpoints.forEach((pos) => { util.putASphereInEnvironment(env, 0.01, pos) });
 
 

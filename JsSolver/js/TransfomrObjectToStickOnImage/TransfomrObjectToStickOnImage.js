@@ -45,7 +45,7 @@ function setUpImages() {
                 ctx === null || ctx === void 0 ? void 0 : ctx.fill();
                 ctx === null || ctx === void 0 ? void 0 : ctx.closePath();
             }
-            var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points, controlTransformMat, true);
+            var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points, controlTransformMat, false);
             threeDpoints.forEach((pos) => { util.putASphereInEnvironment(env, 0.01, pos); });
             //draw original point
             plane3 === null || plane3 === void 0 ? void 0 : plane3.translateZ(-1);
