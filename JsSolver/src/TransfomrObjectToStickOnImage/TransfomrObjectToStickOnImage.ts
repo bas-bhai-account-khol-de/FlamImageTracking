@@ -27,8 +27,8 @@ let points: number[][] = []
 let controlTransformMat: THREE.Matrix4 = new THREE.Matrix4()
 // add a image as tedxture on canvas
 async function setUpImages() {
-    controlTransformMat.makeRotationY(0.5)
-    controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(0.5)).multiply(new THREE.Matrix4().makeRotationZ(0.6))
+    controlTransformMat.makeRotationY(Math.random())
+    controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random()))
     controlTransformMat.premultiply(new THREE.Matrix4().makeTranslation(0, 0, -1)) // needed to shift points by 1
    
     util.addTextureOnCanvas(textureCanvas, baseImage,
@@ -100,8 +100,8 @@ function UpdateImageAfterTranform() {
         truth = pointsToScreen
         truth = truth.map((val) => { return [Math.floor(util.globalPrecisionFactor * val[0]), Math.floor(util.globalPrecisionFactor * val[1])] })
         pointsToScreen = pointsToScreen.map((val) => { return [Math.floor( h* val[0] - (h-w)/2), Math.floor(h * val[1])] })
-        pointsToScreen = util.AdjustedPointFromImagePoints(pointsToScreen,newImageCanvas.width,newImageCanvas.height)
         document.getElementById('transformedpoint')!.innerHTML = pointsToScreen.join('<br>');
+        pointsToScreen = util.AdjustedPointFromImagePoints(pointsToScreen,newImageCanvas.width,newImageCanvas.height)
         console.log(truth)
         var threeDpoints = util.getReprojectedPointsAfterTrasnform(newrePorjectedImageEnv, pointsToScreen, new THREE.Matrix4(), false)
         threeDpoints.forEach((pos) => { pos.z = -1; util.putASphereInEnvironment(newrePorjectedImageEnv, 0.01, pos) });
