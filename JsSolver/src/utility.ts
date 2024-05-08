@@ -35,7 +35,7 @@ export function addCanvasOfSize(doc:Document,w:number = 1000,h:number =1000) :  
 export function Create3DScene(canvas : HTMLCanvasElement) :Environment {
     const scene = new THREE.Scene();
     const fov = 40
-    const camera = new THREE.PerspectiveCamera(fov,canvas.width/canvas.height, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(fov,canvas.width/canvas.height, 0.1, 10);
     camera.position.z = 0;
     const renderer = new THREE.WebGLRenderer({canvas:canvas});
     return {camera,renderer,scene,fov}
@@ -85,13 +85,49 @@ export function getReprojectedPointsAfterTrasnform(env:Environment,points: numbe
 
    
 
-    // console.log("  scrren point sin 3d" , ScreenPoints)
-    // ScreenPoints= ScreenPoints.map((vec)=>{
-    //     const proj =  vec.projectOnPlane(new THREE.Vector3(0,0,-1))
-    //     console.log(proj)
-    //     return proj
-    //     // return  new THREE.Vector3(setPrecision((pointOnscreen.x)*s),setPrecision((pointOnscreen.y)*s),0)
-    // })
+    console.log("  scrren point sin 3d" , ScreenPoints)
+    ScreenPoints= ScreenPoints.map((vec)=>{
+        const projMat  = env.camera.projectionMatrix
+        var columnMatrix   = new THREE.Matrix4();
+        columnMatrix.set(
+            vec.x, 0, 0, 0,
+            vec.y, 0, 0, 0,
+            vec.z, 0, 0, 0,
+            1, 1, 1, 1
+        );
+        var fv= Math.tan((env.fov/2)*Math.PI/180)
+        var customProj = new THREE.Matrix4().set(
+            1,0,0,0,
+            0,1,0,0,
+            0,0,1,0,
+            0,0,-1,0
+        )
+        var tempMatProj= new THREE.Matrix4()
+        var vecPos = new THREE.Vector4(vec.x,vec.y,vec.z,1)
+        var truth= new THREE.Vector3(-1*vec.x/vec.z,-1*vec.y/vec.z,-1)
+        tempMatProj.copy(projMat)
+        // vecPos.applyMatrix4(tempMatProj)
+        vecPos.applyMatrix4(customProj)
+
+        vecPos.divideScalar(vecPos.w)
+        // vecPos.divideScalar(vecPos.z)
+        console.log('truth',truth,1/s,s)
+        console.log('apply mat',vecPos)
+        console.log('diffrence ' , vecPos.x/truth.x,vecPos.y/truth.y,vecPos.z/truth.z,vecPos.w)
+
+        
+
+        //
+        tempMatProj.multiply(columnMatrix)
+        var mat = tempMatProj.elements
+        var colVector = new THREE.Vector4(mat[0],mat[1],mat[2],mat[3])
+        console.log('matrixmultiply',colVector)
+
+       
+        
+
+        return new THREE.Vector3(vecPos.x,vecPos.y,vecPos.z)
+    })
 
     console.log("  scrren point sin 2d" ,ScreenPoints)
     return ScreenPoints

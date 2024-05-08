@@ -80,6 +80,7 @@ async function PrequisiteAnimate() {
 
     //get temporary transform
     plane2.applyMatrix4(controlTransformMat)
+    // plane.visible=false
     plane?.applyMatrix4(controlTransformMat)
     
     

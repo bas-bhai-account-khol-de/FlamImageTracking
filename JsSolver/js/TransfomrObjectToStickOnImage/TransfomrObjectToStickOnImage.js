@@ -36,7 +36,7 @@ util.addTextureOnCanvas(textureCanvas, 'https://storage.googleapis.com/avatar-sy
     }
     controlTransformMat.makeRotationY(0.5);
     controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(0.5));
-    controlTransformMat.premultiply(new THREE.Matrix4().makeTranslation(0, 0, -1));
+    controlTransformMat.premultiply(new THREE.Matrix4().makeTranslation(0, 0, -1)); // needed to shift points by 1
     var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points, controlTransformMat);
     threeDpoints.forEach((pos) => { util.putASphereInEnvironment(env, 0.01, pos); });
 });
@@ -69,6 +69,7 @@ function PrequisiteAnimate() {
         plane2 = yield addimageToSceneWithTexture('https://storage.googleapis.com/avatar-system/test/image-noise.jpg', controlEnv);
         //get temporary transform
         plane2.applyMatrix4(controlTransformMat);
+        // plane.visible=false
         plane === null || plane === void 0 ? void 0 : plane.applyMatrix4(controlTransformMat);
         animate();
     });
