@@ -2,6 +2,7 @@ import { getVec3PointsInArray } from '../mathUtils'
 import { Environment } from '../utilTypes'
 import * as util from '../utility'
 import * as THREE from 'three'
+import * as m from 'mathjs'
 
 
 // const baseImage: string = 'https://storage.googleapis.com/avatar-system/test/white-square-background-d28l8p1i4p1xnysj.jpg'
@@ -18,6 +19,10 @@ let controlEnv = util.Create3DScene(controllerCanvs)
 let newrePorjectedImageEnv = util.Create3DScene(newrePorjectedImage)
 let orignalIn3DEnv = util.Create3DScene(orignalIn3D)
 
+//solving transform
+var solvedCanvas = document.getElementById('solvedTrasnform') as HTMLCanvasElement
+var solvedCanvasEnv  = util.Create3DScene(solvedCanvas)
+
 
 env.renderer.setClearColor('red') // set clear color of canvs
 env.camera.translateZ(0.0) // move camera one unit
@@ -27,6 +32,9 @@ controlEnv.camera.translateZ(0.0) // move camera one unit
 
 let points: number[][] = []
 let controlTransformMat: THREE.Matrix4 = new THREE.Matrix4()
+
+let OrignalPoints: number[][] = []
+let FinalPoints:number[][] = []
 // add a image as tedxture on canvas
 async function setUpImages() {
     controlTransformMat.makeRotationY(0.5)
@@ -65,8 +73,8 @@ async function setUpImages() {
             
             setTimeout(() => { UpdateImageAfterTranform() }, 1000)
             console.log("Tranform [" + controlTransformMat.elements.join(',')+']' )
-            var orignalP = getVec3PointsInArray(threeDpointsOrignal)
-            console.log('orignal ['+orignalP.join(',')+']')
+            OrignalPoints= getVec3PointsInArray(threeDpointsOrignal)
+            console.log('orignal ['+OrignalPoints.join(',')+']')
 
 
         });
@@ -110,8 +118,33 @@ function UpdateImageAfterTranform() {
         pointsToScreen = util.AdjustedPointFromImagePoints(pointsToScreen,newImageCanvas.width,newImageCanvas.height)
         var threeDpointsnew = util.getReprojectedPointsAfterTrasnform(newrePorjectedImageEnv, pointsToScreen, new THREE.Matrix4(), false)
         threeDpointsnew.forEach((pos) => { pos.z = -1; util.putASphereInEnvironment(newrePorjectedImageEnv, 0.01, pos) });
-        var orignalP= getVec3PointsInArray(threeDpointsnew)
-        console.log('final ['+orignalP.join(',')+']')
+        FinalPoints= getVec3PointsInArray(threeDpointsnew)
+        console.log('final ['+FinalPoints.join(',')+']')
+
+        //after we have final point we need to calculate the tranform again
+        var x   = m.transpose( m.matrix(OrignalPoints))
+        var y   = m.transpose( m.matrix(FinalPoints))
+        console.log(x.size(),y)
+        var x_inv = m.pinv(x)
+        var pt =m.multiply(y,x_inv)
+        console.log(pt.size(),pt)
+        pt =m.subset(pt,m.index(3,[0,1,2,3]),[0,0,0,1])
+        console.log(pt.size(),pt)
+        var element =[]
+        
+        for(var i=0;i<16;i++){
+            element.push(pt.get([Math.floor(i/4),i%4]))
+        }
+        var solvedMat  =  new THREE.Matrix4().fromArray(element).transpose();
+        console.log(solvedMat)
+
+        
+        var solvedPlane =await addimageToSceneWithTexture(baseImage, solvedCanvasEnv)
+        solvedPlane?.translateZ(-1);
+        solvedPlane.applyMatrix4(solvedMat)
+
+
+
         
 
 
@@ -183,6 +216,7 @@ async function animate() {
     util.RenderEnvironment(controlEnv)
     util.RenderEnvironment(newrePorjectedImageEnv)
     util.RenderEnvironment(orignalIn3DEnv)
+    util.RenderEnvironment(solvedCanvasEnv)
 
     requestAnimationFrame(animate)
 

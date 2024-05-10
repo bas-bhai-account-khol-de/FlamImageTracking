@@ -25,7 +25,7 @@ def CalculateHomoGraphy(orignalPoints,finalPoints,transform):
     
     pt = np.dot(final,A_pseudo_inv)
     t = np.dot(np.linalg.pinv(p),pt)
-    print(t)
+    print(pt)
     tf = np.array(transform).reshape(4,4)
     tf= tf.transpose()
     print(tf)
