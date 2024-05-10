@@ -46,7 +46,7 @@ export function Create3DScene(canvas : HTMLCanvasElement) :Environment {
  * @param n 
  * @returns 
  */
-export function generateNPointsNormalized(n:number = 100 ):number[][]{
+export function generateNPointsNormalized(n:number = 10):number[][]{
     let arr =[]
     for(var i =0; i<n;i++)
         {

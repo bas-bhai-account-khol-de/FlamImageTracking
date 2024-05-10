@@ -38,15 +38,22 @@ let FinalPoints = [];
 // add a image as tedxture on canvas
 function setUpImages() {
     return __awaiter(this, void 0, void 0, function* () {
-        controlTransformMat.makeRotationY(0.5);
-        // controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random())).multiply(new THREE.Matrix4().makeTranslation(Math.random()-0.5,Math.random()-0.5,-1*Math.random()));
+        // controlTransformMat.makeRotationY(0.5)
+        controlTransformMat.makeRotationY(Math.random());
+        controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random())).multiply(new THREE.Matrix4().makeTranslation(Math.random() - 0.5, Math.random() - 0.5, -1 * Math.random()));
         //with traslation
         // controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random())).multiply(new THREE.Matrix4().makeTranslation(2*Math.random()-1,2*Math.random()-1,-1*Math.random()))
         controlTransformMat.premultiply(new THREE.Matrix4().makeTranslation(0, 0, -1)); // needed to shift points by 1
         util.addTextureOnCanvas(textureCanvas, baseImage, () => {
             var ctx = textureCanvas.getContext('2d');
             points = util.generateNPointsNormalized();
-            document.getElementById('originalpoint').innerHTML = points.join('<br>');
+            // document.getElementById('originalpoint')!.innerHTML= points.join('<br>')
+            document.getElementById('originalpoint').innerHTML = points.join('|');
+            document.getElementById('originalpoint').style.overflow = 'hidden';
+            document.getElementById('originalpoint').style.textOverflow = 'ellipsis';
+            document.getElementById('originalpoint').style.whiteSpace = 'nowrap';
+            // document.getElementById('originalpoint')!.style.height='20';
+            document.getElementById('originalpoint').style.width = '200px';
             var w = textureCanvas.width;
             var h = textureCanvas.height;
             for (var i = 0; i < points.length; i++) {
@@ -97,7 +104,13 @@ function UpdateImageAfterTranform() {
         newReprojectedPlane === null || newReprojectedPlane === void 0 ? void 0 : newReprojectedPlane.translateZ(-1);
         newReprojectedPlane === null || newReprojectedPlane === void 0 ? void 0 : newReprojectedPlane.scale.set(controllerCanvs.width / controllerCanvs.height, 1, 1);
         pointsToScreen = pointsToScreen.map((val) => { return [Math.floor(h * val[0] - (h - w) / 2), Math.floor(h * val[1])]; });
-        document.getElementById('transformedpoint').innerHTML = pointsToScreen.join('<br>');
+        document.getElementById('transformedpoint').innerHTML = pointsToScreen.join('|');
+        // document.getElementById('transformedpoint')!.innerHTML = pointsToScreen.join('<br>');
+        document.getElementById('transformedpoint').style.overflow = 'hidden';
+        document.getElementById('transformedpoint').style.textOverflow = 'ellipsis';
+        document.getElementById('transformedpoint').style.whiteSpace = 'nowrap';
+        // document.getElementById('transformedpoint')!.style.height='20';
+        document.getElementById('transformedpoint').style.width = '200px';
         pointsToScreen = util.AdjustedPointFromImagePoints(pointsToScreen, newImageCanvas.width, newImageCanvas.height);
         var threeDpointsnew = util.getReprojectedPointsAfterTrasnform(newrePorjectedImageEnv, pointsToScreen, new THREE.Matrix4(), false);
         threeDpointsnew.forEach((pos) => { pos.z = -1; util.putASphereInEnvironment(newrePorjectedImageEnv, 0.01, pos); });
@@ -106,12 +119,10 @@ function UpdateImageAfterTranform() {
         //after we have final point we need to calculate the tranform again
         var x = m.transpose(m.matrix(OrignalPoints));
         var y = m.transpose(m.matrix(FinalPoints));
-        console.log(x.size(), y);
         var x_inv = m.pinv(x);
         var pt = m.multiply(y, x_inv);
-        console.log(pt.size(), pt);
         pt = m.subset(pt, m.index(3, [0, 1, 2, 3]), [0, 0, 0, 1]);
-        console.log(pt.size(), pt);
+        console.log('PT after last row zero', pt.size(), pt);
         var element = [];
         for (var i = 0; i < 16; i++) {
             element.push(pt.get([Math.floor(i / 4), i % 4]));

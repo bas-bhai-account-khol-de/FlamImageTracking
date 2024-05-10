@@ -36,7 +36,7 @@ export function Create3DScene(canvas) {
  * @param n
  * @returns
  */
-export function generateNPointsNormalized(n = 100) {
+export function generateNPointsNormalized(n = 10) {
     let arr = [];
     for (var i = 0; i < n; i++) {
         arr.push([Math.floor(globalPrecisionFactor * Math.random()), Math.floor(globalPrecisionFactor * Math.random())]);
