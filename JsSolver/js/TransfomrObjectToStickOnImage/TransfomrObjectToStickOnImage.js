@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+import { getVec3PointsInArray } from '../mathUtils';
 import * as util from '../utility';
 import * as THREE from 'three';
 // const baseImage: string = 'https://storage.googleapis.com/avatar-system/test/white-square-background-d28l8p1i4p1xnysj.jpg'
@@ -31,8 +32,8 @@ let controlTransformMat = new THREE.Matrix4();
 // add a image as tedxture on canvas
 function setUpImages() {
     return __awaiter(this, void 0, void 0, function* () {
-        controlTransformMat.makeRotationY(Math.random());
-        controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random())).multiply(new THREE.Matrix4().makeTranslation(Math.random() - 0.5, Math.random() - 0.5, -1 * Math.random()));
+        controlTransformMat.makeRotationY(0.5);
+        // controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random())).multiply(new THREE.Matrix4().makeTranslation(Math.random()-0.5,Math.random()-0.5,-1*Math.random()));
         //with traslation
         // controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random())).multiply(new THREE.Matrix4().makeTranslation(2*Math.random()-1,2*Math.random()-1,-1*Math.random()))
         controlTransformMat.premultiply(new THREE.Matrix4().makeTranslation(0, 0, -1)); // needed to shift points by 1
@@ -56,6 +57,9 @@ function setUpImages() {
             var threeDpointsOrignal = util.getReprojectedPointsAfterTrasnform(orignalIn3DEnv, points, new THREE.Matrix4(), false);
             threeDpointsOrignal.forEach((pos) => { pos.z = -1; util.putASphereInEnvironment(orignalIn3DEnv, 0.01, pos); });
             setTimeout(() => { UpdateImageAfterTranform(); }, 1000);
+            console.log("Tranform [" + controlTransformMat.elements.join(',') + ']');
+            var orignalP = getVec3PointsInArray(threeDpointsOrignal);
+            console.log('orignal [' + orignalP.join(',') + ']');
         });
     });
 }
@@ -64,7 +68,7 @@ function UpdateImageAfterTranform() {
     util.addTextureOnCanvas(newImageCanvas, controlEnv.renderer.domElement.toDataURL(), () => __awaiter(this, void 0, void 0, function* () {
         var s = 2 * Math.atan((env.fov / 2) * Math.PI / 180);
         var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points, controlTransformMat, true);
-        // convert points on screen
+        // convert points on image
         var pointsToScreen = [];
         threeDpoints.forEach((val) => {
             pointsToScreen.push([((val.x / s) + 0.5), (0.5 - (val.y / s))]);
@@ -76,7 +80,7 @@ function UpdateImageAfterTranform() {
             try {
                 ctx === null || ctx === void 0 ? void 0 : ctx.beginPath();
                 ctx === null || ctx === void 0 ? void 0 : ctx.arc(h * pointsToScreen[i][0] - (h - w) / 2, h * pointsToScreen[i][1], 3, 0, Math.PI * 2);
-                ctx.fillStyle = 'blue';
+                ctx.fillStyle = 'green';
                 ctx === null || ctx === void 0 ? void 0 : ctx.fill();
                 ctx === null || ctx === void 0 ? void 0 : ctx.closePath();
             }
@@ -86,15 +90,13 @@ function UpdateImageAfterTranform() {
         var newReprojectedPlane = yield addimageToSceneWithTexture(controlEnv.renderer.domElement.toDataURL(), newrePorjectedImageEnv, 1);
         newReprojectedPlane === null || newReprojectedPlane === void 0 ? void 0 : newReprojectedPlane.translateZ(-1);
         newReprojectedPlane === null || newReprojectedPlane === void 0 ? void 0 : newReprojectedPlane.scale.set(controllerCanvs.width / controllerCanvs.height, 1, 1);
-        var truth = [];
-        truth = pointsToScreen;
-        truth = truth.map((val) => { return [Math.floor(util.globalPrecisionFactor * val[0]), Math.floor(util.globalPrecisionFactor * val[1])]; });
         pointsToScreen = pointsToScreen.map((val) => { return [Math.floor(h * val[0] - (h - w) / 2), Math.floor(h * val[1])]; });
         document.getElementById('transformedpoint').innerHTML = pointsToScreen.join('<br>');
         pointsToScreen = util.AdjustedPointFromImagePoints(pointsToScreen, newImageCanvas.width, newImageCanvas.height);
-        console.log(truth);
-        var threeDpoints = util.getReprojectedPointsAfterTrasnform(newrePorjectedImageEnv, pointsToScreen, new THREE.Matrix4(), false);
-        threeDpoints.forEach((pos) => { pos.z = -1; util.putASphereInEnvironment(newrePorjectedImageEnv, 0.01, pos); });
+        var threeDpointsnew = util.getReprojectedPointsAfterTrasnform(newrePorjectedImageEnv, pointsToScreen, new THREE.Matrix4(), false);
+        threeDpointsnew.forEach((pos) => { pos.z = -1; util.putASphereInEnvironment(newrePorjectedImageEnv, 0.01, pos); });
+        var orignalP = getVec3PointsInArray(threeDpointsnew);
+        console.log('final [' + orignalP.join(',') + ']');
     }));
 }
 /**

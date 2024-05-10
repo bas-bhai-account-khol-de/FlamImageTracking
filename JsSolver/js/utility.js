@@ -59,7 +59,7 @@ export function addTextureOnCanvas(canvas, url, cb = null) {
  * @param env 3D environment where we want to project
  * @param points  the scren points in 2d coord in range (0,1) we want to project
  * @param transform the tranform of image
- * @param oncreen want points on creen or not
+ * @param oncreen want points on screen or not
  * @returns
  */
 export function getReprojectedPointsAfterTrasnform(env, points, transform = new THREE.Matrix4(), oncreen = true) {
@@ -75,12 +75,17 @@ export function getReprojectedPointsAfterTrasnform(env, points, transform = new 
     });
     if (oncreen) {
         ScreenPoints = ScreenPoints.map((vec) => {
-            var customProj = new THREE.Matrix4().set(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -1, 0);
+            var customProj = new THREE.Matrix4().set(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 1, 0);
+            var customProj2 = new THREE.Matrix4().set(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -1, 0);
             var vecPos = new THREE.Vector4(vec.x, vec.y, vec.z, 1);
+            var vecPos2 = new THREE.Vector4(vec.x, vec.y, vec.z, 1);
             // vecPos.applyMatrix4(tempMatProj)
             vecPos.applyMatrix4(customProj);
             vecPos.divideScalar(vecPos.w);
-            return new THREE.Vector3(vecPos.x, vecPos.y, vecPos.z);
+            vecPos2.applyMatrix4(customProj2);
+            vecPos2.divideScalar(vecPos2.w);
+            console.log('applying custom projection', env.renderer.domElement.id, vec, vecPos, vecPos2);
+            return new THREE.Vector3(vecPos2.x, vecPos2.y, vecPos2.z);
         });
     }
     return ScreenPoints;

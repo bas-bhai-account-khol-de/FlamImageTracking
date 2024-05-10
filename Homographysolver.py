@@ -9,32 +9,35 @@ finalwidth  = 1000
 ratio   = 1;
 print('proof of Assumption :  we can calculate the $ T $ only by determining the new location on features points in screent at $t=t_n$. Following is the proof of assumption')
 
-def getMarkedIMageandPoints():
-    #parameters 
+def CalculateHomoGraphy(orignalPoints,finalPoints,transform):  
+    orignal = np.array(orignalPoints).reshape(10,4).transpose()
+    final = np.array(finalPoints).reshape(10,4).transpose()
+    
+    p = np.array([[1,0,0,0],
+        [0,1,0,0],
+        [0,0,1,0],
+        [0,0,-1,0]])
+    print(orignal)
+    
+    
+    A_pseudo_inv = np.linalg.pinv(orignal)
 
-    global finalwidth
-    finalwidth  = 1000
-    global ratio
-    ratio   = 1;
+    
+    pt = np.dot(final,A_pseudo_inv)
+    t = np.dot(np.linalg.pinv(p),pt)
+    print(t)
+    tf = np.array(transform).reshape(4,4)
+    tf= tf.transpose()
+    print(tf)
+    # print(np.dot(pt,))
+   
+    pass
 
-    orig_image  =  cv2.imread("test/img/cinema1.jpeg")
-
-    # resize to a particular size
-    res_orig_image  =  resizeRatio(orig_image,finalwidth)
-    ratio  =  res_orig_image.shape[0]/res_orig_image.shape[1]
-
-    points  =  [ ([random.random(),random.random(),0,1]) for i in range(10)]
-
-    print(points)
-
-    marked_original_image =  drawPoints(res_orig_image,points)
-
-    # trasnform = createTrasnform()
-    # fn =applyTransform(resizeRatio(orig_image,finalwidth),points,trasnform)
-
-
-    # cv2.imshow('orignal image',marked_original_image)
-    cv2.imwrite('keypoints.jpg',marked_original_image)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    return (resizeRatio(orig_image,finalwidth),points)
+if __name__ == '__main__':
+    CalculateHomoGraphy(
+                        [-0.219,-0.039,-1,1,0.001,-0.153,-1,1,-0.022,-0.311,-1,1,-0.266,0.137,-1,1,-0.301,0.301,-1,1,-0.053,-0.116,-1,1,0.312,-0.104,-1,1,0.315,-0.151,-1,1,0.257,-0.205,-1,1,0.061,-0.229,-1,1]
+                        ,
+                        [-0.215,-0.041,-1,1,0,-0.152,-1,1,-0.021,-0.313,-1,1,-0.269,0.157,-1,1,-0.309,0.352,-1,1,-0.051,-0.118,-1,1,0.235,-0.088,-1,1,0.238,-0.131,-1,1,0.198,-0.182,-1,1,0.05,-0.222,-1,1]
+                        ,
+                        [0.8775825618903728,0,-0.479425538604203,0,0,1,0,0,0.479425538604203,0,0.8775825618903728,0,0,0,-1,1]
+                        )
