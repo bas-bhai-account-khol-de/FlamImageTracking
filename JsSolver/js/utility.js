@@ -36,10 +36,15 @@ export function Create3DScene(canvas) {
  * @param n
  * @returns
  */
-export function generateNPointsNormalized(n = 10) {
+export function generateNPointsNormalized(n = 10, fixed = true) {
     let arr = [];
-    for (var i = 0; i < n; i++) {
-        arr.push([Math.floor(globalPrecisionFactor * Math.random()), Math.floor(globalPrecisionFactor * Math.random())]);
+    if (!fixed) {
+        for (var i = 0; i < n; i++) {
+            arr.push([Math.floor(globalPrecisionFactor * Math.random()), Math.floor(globalPrecisionFactor * Math.random())]);
+        }
+    }
+    else {
+        arr = [[567, 242], [345, 456], [546, 78], [546, 132], [345, 862], [248, 634]];
     }
     return arr;
 }

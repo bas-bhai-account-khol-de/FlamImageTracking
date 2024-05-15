@@ -46,13 +46,16 @@ export function Create3DScene(canvas : HTMLCanvasElement) :Environment {
  * @param n 
  * @returns 
  */
-export function generateNPointsNormalized(n:number = 10):number[][]{
+export function generateNPointsNormalized(n:number = 10,fixed = true):number[][]{
     let arr =[]
-    for(var i =0; i<n;i++)
+    if(!fixed){for(var i =0; i<n;i++)
         {
             arr.push([Math.floor(globalPrecisionFactor*Math.random()),Math.floor(globalPrecisionFactor*Math.random())])
-        }
-        return arr;
+        }}
+    else{arr = [[567,242],[345,456],[546,78],[546,132],[345,862],[248,634]]
+        
+    }
+    return arr;
 }
 
 

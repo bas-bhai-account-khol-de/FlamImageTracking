@@ -38,9 +38,9 @@ let FinalPoints = [];
 // add a image as tedxture on canvas
 function setUpImages() {
     return __awaiter(this, void 0, void 0, function* () {
-        // controlTransformMat.makeRotationY(0.5)
-        controlTransformMat.makeRotationY(Math.random());
-        controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random())).multiply(new THREE.Matrix4().makeTranslation(Math.random() - 0.5, Math.random() - 0.5, -1 * Math.random()));
+        controlTransformMat.makeRotationY(0.5);
+        // controlTransformMat.makeRotationY(Math.random())
+        // controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random())).multiply(new THREE.Matrix4().makeTranslation(Math.random()-0.5,Math.random()-0.5,-1*Math.random()));
         //with traslation
         // controlTransformMat.multiply(new THREE.Matrix4().makeRotationX(Math.random())).multiply(new THREE.Matrix4().makeRotationZ(Math.random())).multiply(new THREE.Matrix4().makeTranslation(2*Math.random()-1,2*Math.random()-1,-1*Math.random()))
         controlTransformMat.premultiply(new THREE.Matrix4().makeTranslation(0, 0, -1)); // needed to shift points by 1
