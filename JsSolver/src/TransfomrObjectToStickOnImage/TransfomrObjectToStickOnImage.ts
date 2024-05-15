@@ -69,7 +69,7 @@ async function setUpImages() {
 
             var threeDpoints = util.getReprojectedPointsAfterTrasnform(env, points, controlTransformMat, false)
             threeDpoints.forEach((pos) => { util.putASphereInEnvironment(env, 0.01, pos) });
-        
+            console.log('3d point',threeDpoints)
             
 
             //draw original point
@@ -82,6 +82,8 @@ async function setUpImages() {
             console.log("Tranform [" + controlTransformMat.elements.join(',')+']' )
             OrignalPoints= getVec3PointsInArray(threeDpointsOrignal)
             console.log('orignal ['+OrignalPoints.join(',')+']')
+
+
 
 
         });
@@ -135,25 +137,70 @@ function UpdateImageAfterTranform() {
         console.log('final ['+FinalPoints.join(',')+']')
 
         //after we have final point we need to calculate the tranform again
-        var x   = m.transpose( m.matrix(OrignalPoints))
-        var y   = m.transpose( m.matrix(FinalPoints))
-        var x_inv = m.pinv(x)
-        var pt =m.multiply(y,x_inv)
-        pt =m.subset(pt,m.index(3,[0,1,2,3]),[0,0,0,1])
-        console.log('PT after last row zero',pt.size(),pt)
-        var element =[]
+        // var x   = m.transpose( m.matrix(OrignalPoints))
+        // var y   = m.transpose( m.matrix(FinalPoints))
+        // var x_inv = m.pinv(x)
+        // var pt =m.multiply(y,x_inv)
+        // pt =m.subset(pt,m.index(3,[0,1,2,3]),[0,0,0,1])
+        // console.log('PT after last row zero',pt.size(),pt)
+        // var element =[]
         
-        for(var i=0;i<16;i++){
-            element.push(pt.get([Math.floor(i/4),i%4]))
-        }
-        var solvedMat  =  new THREE.Matrix4().fromArray(element).transpose();
-        console.log(solvedMat)
+        // for(var i=0;i<16;i++){
+        //     element.push(pt.get([Math.floor(i/4),i%4]))
+        // }
+        // var solvedMat  =  new THREE.Matrix4().fromArray(element).transpose();
+        // console.log(solvedMat)
 
         
-        var solvedPlane =await addimageToSceneWithTexture(baseImage, solvedCanvasEnv)
-        solvedPlane?.translateZ(-1);
-        solvedPlane.applyMatrix4(solvedMat)
+        // var solvedPlane =await addimageToSceneWithTexture(baseImage, solvedCanvasEnv)
+        // solvedPlane?.translateZ(-1);
+        // solvedPlane.applyMatrix4(solvedMat)
 
+        //using angle and dixtace
+        //angle first 
+        var o = OrignalPoints
+        var f= FinalPoints
+
+        var mat_rows = []
+        var sol_rows = []
+        function x(n:number){return o[n][0]}
+        function y(n:number){return o[n][1]}
+        function X(n:number){return f[n][0]}
+        function Y(n:number){return f[n][1]}
+        //p2->p1  p2->p3
+        mat_rows.push([0,X(2)**2+Y(2)**2,0,-1*(X(2)*X(1) + Y(2)*Y(1)),-1*(X(2)*X(3) + Y(2)*Y(3)),(X(1)*X(3) + Y(1)*Y(3))])
+        sol_rows.push([x(1)*x(3) + x(2)*x(2) - x(2)*x(1)-x(3)*x(2) +y(1)*y(3) + y(2)*y(2) - y(1)*y(2)  - y(3)*y(2) ])
+       
+        //p3->p1  p3->p2
+        mat_rows.push([0,0,X(3)**2+Y(3)**2,1*(X(2)*X(1) + Y(2)*Y(1)),-1*(X(2)*X(3) + Y(2)*Y(3)),-1*(X(1)*X(3) + Y(1)*Y(3))])
+        sol_rows.push([-1*x(1)*x(3) + x(3)*x(3) +x(2)*x(1) -x(3)*x(2) - y(1)*y(3) + y(3)*y(3) +y(1)*y(2)  - y(3)*y(2) ])
+
+        //p1->p2  p1->p3
+        mat_rows.push([X(1)**2+Y(1)**2,0,0,-1*(X(2)*X(1) + Y(2)*Y(1)),1*(X(2)*X(3) + Y(2)*Y(3)),-1*(X(1)*X(3) + Y(1)*Y(3))])
+        sol_rows.push([-1*x(1)*x(3) + x(1)*x(1) - x(2)*x(1)+x(3)*x(2) -y(1)*y(3) + y(1)*y(1) - y(1)*y(2)  + y(3)*y(2) ])
+        
+        //ditance 
+        // p1 -> p2
+        mat_rows.push([(X(1)**2+Y(1)**2),X(2)**2 + Y(2)**2,0,-2*(X(1)*X(2) + Y(1)*Y(2)),0,0])
+        sol_rows.push([x(1)**2+x(2)**2 + y(1)**2 + y(2)**2 -2*(x(1)*x(2) + y(1)*y(2)) ])
+        //p2->p3
+        mat_rows.push([0,X(2)**2 + Y(2)**2,(X(3)**2+Y(3)**2),0,-2*(X(3)*X(2) + Y(3)*Y(2)),0])
+        sol_rows.push([x(3)**2+x(2)**2 + y(3)**2 + y(2)**2 -2*(x(3)*x(2) + y(3)*y(2)) ])
+        //p3->p1
+        mat_rows.push([(X(1)**2+Y(1)**2),0,(X(3)**2+Y(3)**2),0,0,-2*(X(3)*X(1) + Y(3)*Y(1))])
+        sol_rows.push([x(3)**2+x(1)**2 + y(3)**2 + y(1)**2 -2*(x(3)*x(1) + y(3)*y(1)) ])
+
+        var A = m.matrix(mat_rows);
+        var B = m.matrix(sol_rows);
+        //AX=B
+        console.log(A);
+        console.log(B);
+
+        var A_inv= m.pinv(A)
+
+        var z = m.multiply(A_inv,B);
+
+        console.log(z);
 
 
         
