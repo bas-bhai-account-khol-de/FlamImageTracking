@@ -144,23 +144,23 @@ function UpdateImageAfterTranform() {
         function X(n) { return f[n][0]; }
         function Y(n) { return f[n][1]; }
         //p2->p1  p2->p3
-        mat_rows.push([0, Math.pow(X(2), 2) + Math.pow(Y(2), 2), 0, -1 * (X(2) * X(1) + Y(2) * Y(1)), -1 * (X(2) * X(3) + Y(2) * Y(3)), (X(1) * X(3) + Y(1) * Y(3))]);
+        mat_rows.push([0, Math.pow(X(2), 2) + Math.pow(Y(2), 2) + 1, 0, -1 * (X(2) * X(1) + Y(2) * Y(1) + 1), -1 * (X(2) * X(3) + Y(2) * Y(3) + 1), (X(1) * X(3) + Y(1) * Y(3) + 1)]);
         sol_rows.push([x(1) * x(3) + x(2) * x(2) - x(2) * x(1) - x(3) * x(2) + y(1) * y(3) + y(2) * y(2) - y(1) * y(2) - y(3) * y(2)]);
         //p3->p1  p3->p2
-        mat_rows.push([0, 0, Math.pow(X(3), 2) + Math.pow(Y(3), 2), 1 * (X(2) * X(1) + Y(2) * Y(1)), -1 * (X(2) * X(3) + Y(2) * Y(3)), -1 * (X(1) * X(3) + Y(1) * Y(3))]);
+        mat_rows.push([0, 0, Math.pow(X(3), 2) + Math.pow(Y(3), 2) + 1, 1 * (1 + X(2) * X(1) + Y(2) * Y(1)), -1 * (1 + X(2) * X(3) + Y(2) * Y(3)), -1 * (1 + X(1) * X(3) + Y(1) * Y(3))]);
         sol_rows.push([-1 * x(1) * x(3) + x(3) * x(3) + x(2) * x(1) - x(3) * x(2) - y(1) * y(3) + y(3) * y(3) + y(1) * y(2) - y(3) * y(2)]);
         //p1->p2  p1->p3
-        mat_rows.push([Math.pow(X(1), 2) + Math.pow(Y(1), 2), 0, 0, -1 * (X(2) * X(1) + Y(2) * Y(1)), 1 * (X(2) * X(3) + Y(2) * Y(3)), -1 * (X(1) * X(3) + Y(1) * Y(3))]);
+        mat_rows.push([Math.pow(X(1), 2) + Math.pow(Y(1), 2) + 1, 0, 0, -1 * (X(2) * X(1) + Y(2) * Y(1) + 1), 1 * (X(2) * X(3) + Y(2) * Y(3) + 1), -1 * (X(1) * X(3) + Y(1) * Y(3) + 1)]);
         sol_rows.push([-1 * x(1) * x(3) + x(1) * x(1) - x(2) * x(1) + x(3) * x(2) - y(1) * y(3) + y(1) * y(1) - y(1) * y(2) + y(3) * y(2)]);
         //ditance 
         // p1 -> p2
-        mat_rows.push([(Math.pow(X(1), 2) + Math.pow(Y(1), 2)), Math.pow(X(2), 2) + Math.pow(Y(2), 2), 0, -2 * (X(1) * X(2) + Y(1) * Y(2)), 0, 0]);
+        mat_rows.push([(Math.pow(X(1), 2) + Math.pow(Y(1), 2)) + 1, Math.pow(X(2), 2) + Math.pow(Y(2), 2) + 1, 0, -2 * (X(1) * X(2) + Y(1) * Y(2) + 1), 0, 0]);
         sol_rows.push([Math.pow(x(1), 2) + Math.pow(x(2), 2) + Math.pow(y(1), 2) + Math.pow(y(2), 2) - 2 * (x(1) * x(2) + y(1) * y(2))]);
         //p2->p3
-        mat_rows.push([0, Math.pow(X(2), 2) + Math.pow(Y(2), 2), (Math.pow(X(3), 2) + Math.pow(Y(3), 2)), 0, -2 * (X(3) * X(2) + Y(3) * Y(2)), 0]);
+        mat_rows.push([0, Math.pow(X(2), 2) + Math.pow(Y(2), 2) + 1, (Math.pow(X(3), 2) + Math.pow(Y(3), 2)) + 1, 0, -2 * (X(3) * X(2) + Y(3) * Y(2) + 1), 0]);
         sol_rows.push([Math.pow(x(3), 2) + Math.pow(x(2), 2) + Math.pow(y(3), 2) + Math.pow(y(2), 2) - 2 * (x(3) * x(2) + y(3) * y(2))]);
         //p3->p1
-        mat_rows.push([(Math.pow(X(1), 2) + Math.pow(Y(1), 2)), 0, (Math.pow(X(3), 2) + Math.pow(Y(3), 2)), 0, 0, -2 * (X(3) * X(1) + Y(3) * Y(1))]);
+        mat_rows.push([(Math.pow(X(1), 2) + Math.pow(Y(1), 2)) + 1, 0, (Math.pow(X(3), 2) + Math.pow(Y(3), 2)) + 1, 0, 0, -2 * (X(3) * X(1) + Y(3) * Y(1) + 1)]);
         sol_rows.push([Math.pow(x(3), 2) + Math.pow(x(1), 2) + Math.pow(y(3), 2) + Math.pow(y(1), 2) - 2 * (x(3) * x(1) + y(3) * y(1))]);
         var A = m.matrix(mat_rows);
         var B = m.matrix(sol_rows);
