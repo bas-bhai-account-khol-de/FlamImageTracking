@@ -5,6 +5,8 @@ import glm as m
 from PIL import Image
 from Homographysolver import *
 import utils 
+import pickle
+
 
 
 roation  = random.randint(15,1000)
@@ -140,7 +142,7 @@ def main():
         glUniform1i(glGetUniformLocation(shader_program, "ourTexture"), 0)
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, texture_id)
-        extra(shader_program)
+        rotmat=extra(shader_program)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
 
 
@@ -152,9 +154,14 @@ def main():
         if count < 400 :
             width, height = glfw.get_window_size(window)
             img=capture_image(width,height)
-            save_image(img, 'dataset/output' + str(count) +'.png')
+            
+            save_image(img, 'dataset/img/output' + str(count) +'.png')
+            with open('dataset/trans/output' + str(count) +'.pkl', 'wb') as f:
+                pickle.dump(rotmat.to_list(), f)
             # global output
             # output = cv2.imread('output.png')
+        else:
+            exit()
             
             
         if(count == 20):
@@ -261,6 +268,7 @@ def extra(program):
     loc =  glGetUniformLocation(program,'rot')
     # rotMat = m.mat4()
     glUniformMatrix4fv(loc,1,GL_FALSE,m.value_ptr(rotMat))
+    return rotMat
     
     
     
