@@ -13,7 +13,7 @@ def image_to_gl(point):
 def gl_to_imge(point):
     return((point[0]+ 1)/2,(1 - point[1])/2)
 
-def load_and_display_mainImageAndCenter(filename,point = (0.5,0.5)): # point from top left corner
+def load_and_display_mainImageAndCenter(filename,point = (0.5,0.5)): # point from top left corner image coordinte system
     image = cv2.imread(filename)
     h,w,_ = image.shape
     center = (w * point[0],h*point[1])
@@ -25,7 +25,7 @@ def load_and_display_mainImageAndCenter(filename,point = (0.5,0.5)): # point fro
     
     
 
-def load_and_display_trsnformed_image(filename,tras_filename,point = (0.5,0.5)):
+def load_and_display_trsnformed_image(filename,tras_filename,point = (0.5,0.5)): # point from top left corner image coordinte system
     image = cv2.imread(filename)
     h,w,_ = image.shape
     mat =[]
