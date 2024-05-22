@@ -16,6 +16,7 @@ screen_ratio=2 #screen pixel ratio
 output =cv2.imread('output.png')
 final_points = []
 points=[]
+save =True
 
 def draw_circle(event, x, y, flags, param):
     print('Helo')
@@ -130,7 +131,7 @@ def main():
     count =0
     reference=cv2.imread('keypoints.jpg')
     
-    cv2.imshow("reference ",reference)
+    # cv2.imshow("reference ",reference)
     while not glfw.window_should_close(window):
         # Render here
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -151,7 +152,7 @@ def main():
 
         # Poll for and process events
         glfw.poll_events()
-        if count < 400 :
+        if count < 400 and save :
             width, height = glfw.get_window_size(window)
             img=capture_image(width,height)
             
@@ -169,7 +170,7 @@ def main():
             # glfw.terminate()
             # break
             pass
-        cv2.imshow("destination ",output)
+        # cv2.imshow("destination ",output)
         
         #save image
         
