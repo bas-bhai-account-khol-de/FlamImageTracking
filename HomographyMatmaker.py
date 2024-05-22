@@ -149,12 +149,12 @@ def main():
 
         # Poll for and process events
         glfw.poll_events()
-        if count < 4 :
+        if count < 400 :
             width, height = glfw.get_window_size(window)
             img=capture_image(width,height)
-            save_image(img, 'output.png')
-            global output
-            output = cv2.imread('output.png')
+            save_image(img, 'dataset/output' + str(count) +'.png')
+            # global output
+            # output = cv2.imread('output.png')
             
             
         if(count == 20):
@@ -208,17 +208,28 @@ def compile_shader(shader_type, source):
     return shader
 
 
+def get_random_angle_far_from_pi():
+    ang = random.random()*m.pi()*2
+    th =0.5
+    while (abs(ang-m.pi()/2 ) < th or abs(ang-3*m.pi()/2 ) < th ):
+         ang = random.random()*m.pi()*2
+   
+    return ang
+
+
 def extra(program):
     global roation
-    roation = -0.5
+    # roation = -0.5
     roation1 =0
-    rotMatz =m.rotate(roation/2,m.vec3(0,0,1))
-    rotMaty =m.rotate(roation/3,m.vec3(0,1,0))
-    rotMatx =m.rotate(roation,m.vec3(1,0,0))
+    
+    rotMatz =m.rotate(random.random()*m.pi()*2,m.vec3(0,0,1))
+    rotMaty =m.rotate(get_random_angle_far_from_pi(),m.vec3(0,1,0))
+    rotMatx =m.rotate(get_random_angle_far_from_pi(),m.vec3(1,0,0))
 
-    tranx= m.translate(m.vec3(-(roation%3)/6,0,0))
-    trany = m.translate(m.vec3(0,-2*(roation%3)/6,0))
-    tranz =  m.translate(m.vec3(0,0,-1.1))
+    d = 1+random.random()*2
+    tranx= m.translate(m.vec3((random.randrange(-30,30)/100 ) * d,0,0))
+    trany = m.translate(m.vec3(0,(random.randrange(-30,30)/100 ) * d,0))
+    tranz =  m.translate(m.vec3(0,0,-1*d))
 
     pers = m.perspective(m.radians(50),r_scn,0.01,40)
     
@@ -226,11 +237,11 @@ def extra(program):
     # test=m.transpose(test)
 
 
-    rotMat =  pers   * tranz 
+    rotMat =  pers   * tranz *trany * tranx * rotMatz * rotMatx *rotMaty
     test2 = rotMat * m.vec4(0.5,0.5,0,1)
     test = rotMat * test
     # global roation
-    # roation+=0.01
+    roation+=0.01
    
     test =m.transpose(test)
     last_row = test.to_list()[-1]
