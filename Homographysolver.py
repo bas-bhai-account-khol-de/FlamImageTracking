@@ -10,7 +10,7 @@ ratio   = 1;
 print('proof of Assumption :  we can calculate the $ T $ only by determining the new location on features points in screent at $t=t_n$. Following is the proof of assumption')
 
 def getMarkedIMageandPoints():
-    #parameters 
+    #parameters ``
 
     global finalwidth
     finalwidth  = 1000

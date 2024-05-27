@@ -40,17 +40,15 @@ def load_and_display_trsnformed_image(filename,tras_filename,point = (0.5,0.5)):
     pos = rotMat * pos
     pos =pos.to_list()
     point = gl_to_imge([pos[0]/pos[2],pos[1]/pos[2]])
-    center = (w * point[0],h*point[1])
-    print(gl_point)
-    print(point)
-    
-    utils.drawdots(image,[center])
-    cv2.imshow('image',image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    center = ( point[0],point[1])
+    # utils.drawdots(image,[center])
+    # cv2.imshow('image',image)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    return center
     
 
 
-point = (0.4,0.6)
-load_and_display_mainImageAndCenter('test/img/cinema1.jpeg',point)
-load_and_display_trsnformed_image('dataset/img/output2.png','dataset/trans/output2.pkl',point)
+# point = (0.4,0.6)
+# load_and_display_mainImageAndCenter('test/img/cinema1.jpeg',point)
+# load_and_display_trsnformed_image('dataset/img/output2.png','dataset/trans/output2.pkl',point)
