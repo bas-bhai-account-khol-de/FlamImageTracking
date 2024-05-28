@@ -156,8 +156,8 @@ def main():
             width, height = glfw.get_window_size(window)
             img=capture_image(width,height)
             
-            save_image(img, 'dataset/img/output' + str(count) +'.png')
-            with open('dataset/trans/output' + str(count) +'.pkl', 'wb') as f:
+            save_image(img, 'SLAM/FlamImageTracking/Dataset/img/output' + str(count) +'.png')
+            with open('SLAM/FlamImageTracking/Dataset/trasn/output' + str(count) +'.pkl', 'wb') as f:
                 pickle.dump(rotmat.to_list(), f)
             # global output
             # output = cv2.imread('output.png')

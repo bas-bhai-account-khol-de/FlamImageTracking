@@ -17,8 +17,8 @@ def getMarkedIMageandPoints():
     global ratio
     ratio   = 1;
 
-    orig_image  =  cv2.imread("test/img/cinema1.jpeg")
-
+    orig_image  =  cv2.imread("SLAM/FlamImageTracking/test/img/cinema1.jpeg")
+    
     # resize to a particular size
     res_orig_image  =  resizeRatio(orig_image,finalwidth)
     ratio  =  res_orig_image.shape[0]/res_orig_image.shape[1]

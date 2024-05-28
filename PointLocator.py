@@ -49,6 +49,6 @@ def load_and_display_trsnformed_image(filename,tras_filename,point = (0.5,0.5)):
     
 
 
-# point = (0.4,0.6)
-# load_and_display_mainImageAndCenter('test/img/cinema1.jpeg',point)
-# load_and_display_trsnformed_image('dataset/img/output2.png','dataset/trans/output2.pkl',point)
+# point = (0.5,0.5)
+# load_and_display_mainImageAndCenter('/Users/flam/Documents/SLAM/FlamImageTracking/test/img/cinema1.jpeg',point)
+# load_and_display_trsnformed_image('/Users/flam/Documents/SLAM/FlamImageTracking/Dataset/img/output2.png','/Users/flam/Documents/SLAM/FlamImageTracking/Dataset/trasn/output2.pkl',point)
