@@ -32,7 +32,7 @@ def get_model(input_shape, num_points,seed):
     
     probabilities = k.layers.Dense(num_points, activation = "sigmoid")(flattened_layer)
     probabilities = k.layers.Reshape((num_points,1))(probabilities)
-    locations = k.layers.Dense(2*num_points,activation = "relu")(flattened_layer)
+    locations = k.layers.Dense(2*num_points,activation = "linear")(flattened_layer)
     locations = k.layers.Reshape((num_points,2))(locations)
     
     output = k.layers.Concatenate(axis = -1)([probabilities,locations])
