@@ -89,9 +89,15 @@ class CustomDataGenerator(k.utils.Sequence):
         batch_keypoints = np.array(batch_keypoints)
         
         ### Create duplicates without points
-        batch_orig_img = np.concatenate([batch_orig_img, batch_orig_img], axis = 0)
-        batch_processed_images = np.concatenate([batch_processed_images, np.array(batch_background_images)], axis = 0)
-        batch_keypoints = np.concatenate([batch_keypoints, np.zeros_like(batch_keypoints)])
+        if self.batchsize == 1:
+            number_duplicates = 1
+        else:
+            number_duplicates = np.random.randint(int(self.batchsize*0.5),int(self.batchsize*1.5))
+        batch_orig_img = np.tile(self.original_img, (len(batch_images) + number_duplicates, 1, 1, 1))
+        batch_background_paths_duplicates = np.random.choice(self.background_images_path,number_duplicates)
+        batch_background_images_duplicates = [cv2.resize(cv2.imread(path), self.imagesize) for path in batch_background_paths_duplicates]
+        batch_processed_images = np.concatenate([batch_processed_images, np.array(batch_background_images_duplicates)], axis = 0)
+        batch_keypoints = np.concatenate([batch_keypoints, np.zeros((number_duplicates,*(batch_keypoints.shape[1:])))])
         
         if self.batchsize == 1:
             random_number = np.random.rand()
@@ -103,7 +109,7 @@ class CustomDataGenerator(k.utils.Sequence):
                 batch_orig_img = batch_orig_img[:1]
                 batch_processed_images = batch_processed_images[:1]
                 batch_keypoints = batch_keypoints[:1]
-                
+
         return [batch_orig_img,batch_processed_images], batch_keypoints
     
 def custom_loss(y_true, y_pred):
@@ -127,7 +133,7 @@ def custom_loss(y_true, y_pred):
     
     with open("SLAM/FlamImageTracking/loss_variation.txt",'a') as writer:
         writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")
-    return bce_loss * euclidian_loss
+    return bce_loss #+ euclidian_loss
 
 def train(generator, model, epochs, optimizer):
     with open("SLAM/FlamImageTracking/train_loss.txt",'w') as writer:

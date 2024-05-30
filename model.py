@@ -1,8 +1,10 @@
 from tensorflow import keras as k
 
-def get_conv_block(inputs,filters, kernal_size, custom_padding = "same", custom_stride = (1, 1), custom_activation = "relu", custom_max_pool_kernel = (2,2)):
+def get_conv_block(inputs,filters, kernal_size, custom_padding = "same", custom_stride = (1, 1), custom_activation = "linear", custom_max_pool_kernel = (2,2)):
     conv1 = k.layers.Conv2D(filters, kernal_size, padding = custom_padding, strides = custom_stride, activation = custom_activation)(inputs)
+    conv1 = k.layers.LeakyReLU(0.3)(conv1)
     conv2 = k.layers.Conv2D(filters, kernal_size, padding = custom_padding, strides = custom_stride, activation = custom_activation)(conv1)
+    conv2 = k.layers.LeakyReLU(0.3)(conv2)
     max1 = k.layers.MaxPooling2D(custom_max_pool_kernel)(conv2)
     
     return max1
@@ -18,14 +20,16 @@ def get_model(input_shape, num_points,seed):
 
     conv_block_1 = get_conv_block(input_1, filters = 32, kernal_size=(3,3), custom_max_pool_kernel = (4,4))
     conv_block_2 = get_conv_block(conv_block_1, filters = 64, kernal_size=(3,3), custom_max_pool_kernel = (4,4))
-    conv_block_3 = k.layers.Conv2D(64, (3,3), padding = "same", activation = "relu")(conv_block_2)
+    conv_block_3 = k.layers.Conv2D(64, (3,3), padding = "same", activation = "linear")(conv_block_2)
+    conv_block_3 = k.layers.LeakyReLU(0.3)(conv_block_3)
+    
 
     cam_conv_block_1 = get_conv_block(input_2, filters = 32, kernal_size=(3,3))
     cam_conv_block_2 = get_conv_block(cam_conv_block_1, filters = 32, kernal_size=(3,3))
     cam_conv_block_3 = get_conv_block(cam_conv_block_2, filters = 64, kernal_size=(3,3))
     cam_conv_block_4 = get_conv_block(cam_conv_block_3, filters = 64, kernal_size=(3,3))
-    cam_conv_block_5 = k.layers.Conv2D(64, (3,3), padding = "same", activation = "relu")(cam_conv_block_4)
-    
+    cam_conv_block_5 = k.layers.Conv2D(64, (3,3), padding = "same", activation = "linear")(cam_conv_block_4)
+    cam_conv_block_5 = k.layers.LeakyReLU(0.3)(cam_conv_block_5)
 
     combined_feature_vector = k.layers.Concatenate()([conv_block_3,cam_conv_block_5])
     
@@ -36,11 +40,12 @@ def get_model(input_shape, num_points,seed):
     
     flattened_layer = k.layers.Flatten()(feature_map3)
     
-    probabilities = k.layers.Dense(num_points, activation = "relu")(flattened_layer)
+    probabilities = k.layers.Dense(num_points*2, activation = "linear")(flattened_layer)
+    probabilities = k.layers.LeakyReLU(0.3)(flattened_layer)
     probabilities = k.layers.Dense(num_points, activation = "sigmoid")(probabilities)
     probabilities = k.layers.Reshape((num_points,1))(probabilities)
     
-    # locations = k.layers.Dense(2*num_points,activation = "relu")(flattened_layer)
+    # locations = k.layers.Dense(2*num_points,activation = k.layers.LeakyReLU(0.3))(flattened_layer)
     locations_x = k.layers.Dense(num_points,activation = "linear")(flattened_layer)
     locations_y = k.layers.Dense(num_points,activation = "linear")(flattened_layer)
     
