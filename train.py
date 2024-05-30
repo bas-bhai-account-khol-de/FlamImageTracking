@@ -11,7 +11,7 @@ dataset_size = 400
 input_shape = (256,256,3)
 epochs = 1000
 batch_size = 40
-optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001)
+optimizer = tf.keras.optimizers.Adam(learning_rate = 0.0001)
 seed = 12345
 
 

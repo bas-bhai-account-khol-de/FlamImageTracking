@@ -38,6 +38,7 @@ class CustomDataGenerator(k.utils.Sequence):
         self.matrices = self.matrices[indices]
         
     def process_images(self,image, background_image):
+    
         rgb_r, rgb_g, rgb_b = cv2.split(background_image)
         rgba_r, rgba_g, rgba_b, rgba_a = cv2.split(image)
         r = np.where(rgba_a == 255, rgba_r, rgb_r)
