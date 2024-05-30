@@ -3,10 +3,8 @@ from tensorflow import keras as k
 from PointLocator import load_and_display_trsnformed_image
 import numpy as np
 import cv2
-import pickle
 import math
 import os
-from PIL import Image, ImageChops
 import warnings
 warnings.simplefilter('ignore', category=FutureWarning)
 
@@ -68,6 +66,8 @@ class CustomDataGenerator(k.utils.Sequence):
         batch_processed_images = []
         probabilities = []
         
+        ## Add duplicate images without anything to add
+        
         for i in range(len(batch_images)):
             batch_processed_images.append(self.process_images(batch_images[i], batch_background_images[i]))
             
@@ -88,6 +88,22 @@ class CustomDataGenerator(k.utils.Sequence):
         batch_processed_images = np.array(batch_processed_images)
         batch_keypoints = np.array(batch_keypoints)
         
+        ### Create duplicates without points
+        batch_orig_img = np.concatenate([batch_orig_img, batch_orig_img], axis = 0)
+        batch_processed_images = np.concatenate([batch_processed_images, np.array(batch_background_images)], axis = 0)
+        batch_keypoints = np.concatenate([batch_keypoints, np.zeros_like(batch_keypoints)])
+        
+        if self.batchsize == 1:
+            random_number = np.random.rand()
+            if random_number > 0.5:
+                batch_orig_img = batch_orig_img[1:]
+                batch_processed_images = batch_processed_images[1:]
+                batch_keypoints = batch_keypoints[1:]
+            else:
+                batch_orig_img = batch_orig_img[:1]
+                batch_processed_images = batch_processed_images[:1]
+                batch_keypoints = batch_keypoints[:1]
+                
         return [batch_orig_img,batch_processed_images], batch_keypoints
     
 def custom_loss(y_true, y_pred):
@@ -109,8 +125,9 @@ def custom_loss(y_true, y_pred):
     euclidian_loss = probability_true * euclidian_loss
     euclidian_loss = k.backend.mean(euclidian_loss)
     
-    print(bce_loss, euclidian_loss)
-    return bce_loss + euclidian_loss
+    with open("SLAM/FlamImageTracking/loss_variation.txt",'a') as writer:
+        writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")
+    return bce_loss * euclidian_loss
 
 def train(generator, model, epochs, optimizer):
     with open("SLAM/FlamImageTracking/train_loss.txt",'w') as writer:
@@ -129,15 +146,3 @@ def train(generator, model, epochs, optimizer):
             model.save("SLAM/FlamImageTracking/model.h5", save_format='h5')
             if batch%5==0:
                 print(loss)
-                
-
-# img_path = "/Users/flam/Documents/SLAM/FlamImageTracking/Dataset/img/"
-# mat_path = "/Users/flam/Documents/SLAM/FlamImageTracking/Dataset/trasn/"
-# original_image_path = "/Users/flam/Documents/SLAM/FlamImageTracking/test/img/cinema1.jpeg"
-# background_images_path = "/Users/flam/Documents/SLAM/FlamImageTracking/Dataset/Background/"
-# keypoints = np.array([[0.5,0.5]])
-
-# k = CustomDataGenerator(original_image_path, img_path, mat_path, background_images_path, keypoints, 1, 1, 12345)
-# img = k.__getitem__(0)
-# cv2.imshow("jhgfghj", img[0][1][0])
-# cv2.waitKey(10000)
