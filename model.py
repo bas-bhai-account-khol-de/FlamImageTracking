@@ -84,13 +84,9 @@ def transformedImageNetwork(number_points,inp_shape = (32,32,128),input_shape = 
     
 
     
-    model  = k.Model(inputs =[inp,inp_tensor],outputs =[prob],name='transformed_network')
+    model  = k.Model(inputs =[inp,inp_tensor],outputs =[f],name='transformed_network')
     return model
 
-
-    
-    model  = k.Model(inputs =inp,outputs =x)
-    return model
 
 
 def finalModel(number_points, input_shape=(128,128,3)):

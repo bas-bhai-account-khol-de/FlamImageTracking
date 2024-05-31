@@ -1,5 +1,5 @@
 import tensorflow as tf
-from model import get_model
+import model
 from training_utils import *
 
 Dataset = "Dataset"
@@ -16,7 +16,7 @@ optimizer = tf.keras.optimizers.Adam(learning_rate = 0.0001)
 seed = 12345
 
 
-model = get_model(input_shape, len(keypoints), seed)
+model = model.finalModel(len(keypoints))
 # model = tf.keras.models.load_model("model_backup.h5")
 print(model.summary())
 

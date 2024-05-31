@@ -9,7 +9,7 @@ import warnings
 warnings.simplefilter('ignore', category=FutureWarning)
 
 class CustomDataGenerator(k.utils.Sequence):
-    def __init__(self, original_image_path, images_path, matrices_path, background_images_path, keypoints, batch_size,  dataset_size, seed,image_size = (256, 256)):
+    def __init__(self, original_image_path, images_path, matrices_path, background_images_path, keypoints, batch_size,  dataset_size, seed,image_size = (128, 128)):
         if seed is not None:
             # k.utils.set_random_seed(seed)
             np.random.seed(seed)
@@ -133,7 +133,7 @@ def custom_loss(y_true, y_pred):
     
     with open("loss_variation.txt",'a') as writer:
         writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")
-    return bce_loss + euclidian_loss
+    return bce_loss #+ euclidian_loss
 
 def train(generator, model, epochs, optimizer):
     with open("train_loss.txt",'w') as writer:
