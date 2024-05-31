@@ -11,17 +11,17 @@ warnings.simplefilter('ignore', category=FutureWarning)
 class CustomDataGenerator(k.utils.Sequence):
     def __init__(self, original_image_path, images_path, matrices_path, background_images_path, keypoints, batch_size,  dataset_size, seed,image_size = (256, 256)):
         if seed is not None:
-            k.utils.set_random_seed(seed)
+            # k.utils.set_random_seed(seed)
             np.random.seed(seed)
         
         self.original_img = np.array(cv2.resize(cv2.imread(original_image_path), image_size))
         self.image_paths = []
         self.matrices = []
         for i in range(dataset_size):
-            self.image_paths.append(images_path + "output" + str(i) + ".png")
-            self.matrices.append(matrices_path + "output" + str(i) + ".pkl")
+            self.image_paths.append(os.path.join(images_path, "output" + str(i) + ".png"))
+            self.matrices.append(os.path.join(matrices_path,"output" + str(i) + ".pkl") )
         
-        self.background_images_path = [background_images_path + path for path in os.listdir(background_images_path)]
+        self.background_images_path = [os.path.join(background_images_path,path)  for path in os.listdir(background_images_path)]
         self.batchsize = batch_size
         self.imagesize = image_size
         self.keypoints = keypoints
@@ -131,12 +131,12 @@ def custom_loss(y_true, y_pred):
     euclidian_loss = probability_true * euclidian_loss
     euclidian_loss = k.backend.mean(euclidian_loss)
     
-    with open("SLAM/FlamImageTracking/loss_variation.txt",'a') as writer:
+    with open("loss_variation.txt",'a') as writer:
         writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")
     return bce_loss + euclidian_loss
 
 def train(generator, model, epochs, optimizer):
-    with open("SLAM/FlamImageTracking/train_loss.txt",'w') as writer:
+    with open("train_loss.txt",'w') as writer:
         writer.write('')
     for epoch in range(epochs):
         print(f"Epoch {epoch} starting...")
@@ -145,11 +145,11 @@ def train(generator, model, epochs, optimizer):
             with tf.GradientTape() as tape:
                 predictions = model(x)
                 loss = custom_loss(y, predictions)  
-                with open("SLAM/FlamImageTracking/train_loss.txt",'a') as writer:
+                with open("train_loss.txt",'a') as writer:
                     writer.write(str(loss.numpy()) + '\n')
             gradients = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-            model.save("SLAM/FlamImageTracking/model.h5", save_format='h5')
-            model.save("SLAM/FlamImageTracking/model_backup.h5", save_format='h5')
+            model.save("model.h5", save_format='h5')
+            model.save("model_backup.h5", save_format='h5')
             if batch%5==0:
                 print(loss)

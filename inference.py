@@ -2,13 +2,14 @@ import cv2
 import numpy as np
 import tensorflow.keras as k
 from matplotlib import pyplot as plt
+import os
 
 from training_utils import CustomDataGenerator
-
-image_files = "Dataset//img//"
-matrices_path = "Dataset//trasn//"
-background_images_path = "Dataset//Background//"
-original_image_path = "test\img\cinema1.jpeg"
+Dataset = "Dataset"
+image_files = os.path.join(Dataset,"img")
+matrices_path = os.path.join(Dataset,"trasn")
+background_images_path = os.path.join(Dataset,"Background")
+original_image_path = os.path.join(os.path.join('test',"img"),"cinema1.jpeg")
 model_path = "model.h5"
 losses_file = "train_loss.txt"
 image_size = (256,256)
@@ -41,7 +42,7 @@ def plot_losses(file_path, point, groundtruth, input_shape):
     plt.ylabel('Loss')
     plt.tight_layout()
     plt.grid(True)
-    plt.draw()
+    plt.show()
 
 # Function to display an image using OpenCV
 def display_image(image, point):
@@ -58,7 +59,7 @@ def display_image(image, point):
     cv2.imshow("inference", image[0])
 
 # Main loop to iterate through images
-while True:
+def test():
     model = k.models.load_model(model_path)
     inputs, ground_truths = data_generator.__getitem__(np.random.randint(0,data_generator.__len__()))
     transformed_points = model(inputs)
@@ -67,14 +68,20 @@ while True:
     inputs[1] = np.array(inputs[1]*255, dtype=np.uint8)
 
     
-    plot_losses(losses_file, transformed_points, ground_truths, inputs[1].shape)
     display_image(inputs[1], transformed_points)
+    plot_losses(losses_file, transformed_points, ground_truths, inputs[1].shape)
     # Wait for a key pressq
-    key = cv2.waitKey(0)  # Wait indefinitely for a key press
-
-    if key == ord('q'):  # If 'q' is pressed, exit the loop
-        break
+    plt.waitforbuttonpress()
+    plt.close()
+    global count
+    count = count+1
+      # If 'q' is pressed, exit the loop
+    if(count <5):
+        test()
 
 # Destroy all OpenCV windows
     cv2.destroyAllWindows()
     plt.close()
+
+count=0
+test()

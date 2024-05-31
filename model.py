@@ -15,7 +15,7 @@ def get_ASPP_block(inputs):
 def get_model(input_shape, num_points,seed):
     
     filters = num_points *6
-    k.utils.set_random_seed(seed)
+    # k.utils.set_random_seed(seed)
     
     input_1 = k.Input(input_shape)
     input_2 = k.Input(input_shape)

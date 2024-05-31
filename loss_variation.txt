@@ -4573,3 +4573,6 @@ bce_loss: tf.Tensor(0.0013880024, shape=(), dtype=float32), euclidian_loss:  tf.
 bce_loss: tf.Tensor(0.002636829, shape=(), dtype=float32), euclidian_loss:  tf.Tensor(0.04173938, shape=(), dtype=float32) 
 bce_loss: tf.Tensor(0.0022834544, shape=(), dtype=float32), euclidian_loss:  tf.Tensor(0.05987709, shape=(), dtype=float32) 
 bce_loss: tf.Tensor(0.0014193541, shape=(), dtype=float32), euclidian_loss:  tf.Tensor(0.043644138, shape=(), dtype=float32) 
+bce_loss: tf.Tensor(0.6931532, shape=(), dtype=float32), euclidian_loss:  tf.Tensor(0.29532623, shape=(), dtype=float32) 
+bce_loss: tf.Tensor(0.69314045, shape=(), dtype=float32), euclidian_loss:  tf.Tensor(0.20107798, shape=(), dtype=float32) 
+bce_loss: tf.Tensor(0.69314474, shape=(), dtype=float32), euclidian_loss:  tf.Tensor(0.3140134, shape=(), dtype=float32) 
