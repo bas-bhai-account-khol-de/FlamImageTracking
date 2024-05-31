@@ -5,12 +5,12 @@ from matplotlib import pyplot as plt
 
 from training_utils import CustomDataGenerator
 
-image_files = "/Users/flam/Documents/SLAM/FlamImageTracking/Dataset/img/"
-matrices_path = "/Users/flam/Documents/SLAM/FlamImageTracking/Dataset/trasn/"
-background_images_path = "/Users/flam/Documents/SLAM/FlamImageTracking/Dataset/Background/"
-original_image_path = "/Users/flam/Documents/SLAM/FlamImageTracking/test/img/cinema1.jpeg"
-model_path = "/Users/flam/Documents/SLAM/FlamImageTracking/model.h5"
-losses_file = "/Users/flam/Documents/SLAM/FlamImageTracking/train_loss.txt"
+image_files = "Dataset//img//"
+matrices_path = "Dataset//trasn//"
+background_images_path = "Dataset//Background//"
+original_image_path = "test\img\cinema1.jpeg"
+model_path = "model.h5"
+losses_file = "train_loss.txt"
 image_size = (256,256)
 original_image = np.expand_dims(cv2.resize(cv2.imread(original_image_path), image_size), axis=0)
 model = k.models.load_model(model_path)
@@ -34,6 +34,7 @@ def plot_losses(file_path, point, groundtruth, input_shape):
     point: {GT_transformed_point}"""
     
     data = [float(line.strip()) for line in lines]
+    print(data)
     plt.figure(figsize=(10, 6))
     plt.plot(data,color='b')
     plt.title(name)
@@ -41,7 +42,10 @@ def plot_losses(file_path, point, groundtruth, input_shape):
     plt.ylabel('Loss')
     plt.tight_layout()
     plt.grid(True)
-    plt.draw()
+    plt.show()
+    # plt.draw()
+    
+    
 
 # Function to display an image using OpenCV
 def display_image(image, point):
@@ -55,21 +59,27 @@ def display_image(image, point):
     cv2.namedWindow("inference", cv2.WINDOW_NORMAL)
     cv2.moveWindow("inference", 500, 75)
     cv2.imshow("inference", image[0])
-
+def test():
 # Main loop to iterate through images
-while True:
+
+# while True:
     model = k.models.load_model(model_path)
     inputs, ground_truths = data_generator.__getitem__(np.random.randint(0,data_generator.__len__()))
     transformed_points = model(inputs)
 
-    plot_losses(losses_file, transformed_points, ground_truths, inputs[1].shape)
     display_image(inputs[1], transformed_points)
+    plot_losses(losses_file, transformed_points, ground_truths, inputs[1].shape)
+    plt.waitforbuttonpress()
+    
     # Wait for a key press
-    key = cv2.waitKey(0)  # Wait indefinitely for a key press
+    # key = cv2.waitKey(0)  # Wait indefinitely for a key press
 
-    if key == ord('q'):  # If 'q' is pressed, exit the loop
-        break
+    # if key == ord('q'):  # If 'q' is pressed, exit the loop
+    #     plt.close()
+    #     test()
 
 # Destroy all OpenCV windows
     cv2.destroyAllWindows()
     plt.close()
+
+test()
