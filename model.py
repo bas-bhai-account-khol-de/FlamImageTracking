@@ -1,4 +1,5 @@
 from tensorflow import keras as k
+import tensorflow as tf
 
 def get_conv_block(inputs,filters, kernal_size, custom_padding = "same", custom_stride = (1, 1), custom_activation = "linear", custom_max_pool_kernel = (2,2)):
     conv1 = k.layers.Conv2D(filters, kernal_size, padding = custom_padding, strides = custom_stride, activation = custom_activation)(inputs)
@@ -81,3 +82,13 @@ def get_model(input_shape, num_points,seed):
     
     model = k.models.Model(inputs = [input_1, input_2], outputs = output)
     return model
+
+
+def test ():
+    ip = (256,256,3)
+    model = get_model(ip,1,10)
+    trandom_tensor_normal = tf.random.normal(shape=[1,256, 256, 3], mean=0.0, stddev=1.0)
+    model(trandom_tensor_normal)
+    model.summary()
+
+test()
