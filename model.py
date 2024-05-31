@@ -11,84 +11,94 @@ def get_conv_block(inputs,filters, kernal_size, custom_padding = "same", custom_
     return max1
 
 def get_ASPP_block(inputs):
+    
     return inputs
 
-def get_model(input_shape, num_points,seed):
-    
-    filters = num_points *6
-    # k.utils.set_random_seed(seed)
-    
-    input_1 = k.Input(input_shape)
-    input_2 = k.Input(input_shape)
+def InceptionBlock(x):
+    y= k.layers.SeparableConv2D(64,(5,5),padding='same',)(x)
+    y= k.layers.LeakyReLU()(y)
+    x= k.layers.SeparableConv2D(64,(3,3),padding='same')(x)
+    x= k.layers.LeakyReLU()(x)
 
-    bn1 = k.layers.BatchNormalization()(input_1)
-    bn2 = k.layers.BatchNormalization()(input_2)
+    x= k.layers.concatenate([x,y])
+    return x
+
+def InputImageNetwork(input_shape = (128,128,3)):
+    inp = k.Input(input_shape)
+
+    x= InceptionBlock(inp)
+    x= InceptionBlock(x)
+    x= k.layers.MaxPool2D()(x)
+    x= InceptionBlock(x)
+    x= InceptionBlock(x)
+    x= k.layers.MaxPool2D()(x)
+    x= InceptionBlock(x)
+    x= InceptionBlock(x)
+
     
-    conv_block_1 = get_conv_block(bn1, filters = filters, kernal_size=(3,3), custom_max_pool_kernel = (4,4))
-    conv_block_2 = get_conv_block(conv_block_1, filters = filters*2, kernal_size=(3,3), custom_max_pool_kernel = (4,4))
-    conv_block_3 = k.layers.Conv2D(64, (3,3), padding = "same", activation = "linear")(conv_block_2)
-    conv_block_3 = k.layers.LeakyReLU(0.3)(conv_block_3)
+    model  = k.Model(inputs =inp,outputs =x)
+    return model
+
+def DetectionHead(x,number_points):
+    prob =  k.layers.SeparableConv2D(number_points*3,(3,3),padding='same')(x)
+    prob = k.layers.LeakyReLU()(prob)
+    prob= k.layers.MaxPool2D()(prob)
+    prob =  k.layers.SeparableConv2D(number_points*2,(3,3),padding='same')(prob)
+    prob = k.layers.LeakyReLU()(prob)
+    prob = k.layers.Flatten()(prob)
+    return prob
+
+def transformedImageNetwork(number_points,inp_shape = (32,32,128),input_shape = (128,128,3)):
+    inp = k.Input(input_shape)
+    inp_tensor = k.Input(inp_shape)
+
+    x= InceptionBlock(inp)
+    x= InceptionBlock(x)
+    x= k.layers.MaxPool2D()(x)
+    x= InceptionBlock(x)
+    x= InceptionBlock(x)
+    x= k.layers.MaxPool2D()(x)
+    x= k.layers.concatenate([x,inp_tensor])
+
+    x= InceptionBlock(x)
+    x= InceptionBlock(x)
+    x= InceptionBlock(x)
+    x= k.layers.MaxPool2D()(x)
+    x= InceptionBlock(x)
+    x= InceptionBlock(x)
+
+    prob = DetectionHead(x,number_points)
+    prob =k.layers.Dense(number_points,activation='sigmoid')(prob)
+    prob = k.layers.Reshape((number_points,1))(prob)
+
+    locationX =  DetectionHead(x,number_points)
+    locationX=k.layers.Dense(number_points,activation='linear')(locationX)
+    locationX = k.layers.Reshape((number_points,1),name='location_x')(locationX)
+
+    locationY =  DetectionHead(x,number_points)
+    locationY=k.layers.Dense(number_points,activation='linear')(locationY)
+    locationY = k.layers.Reshape((number_points,1),name="location_y")(locationY)
+
+    f = k.layers.concatenate([prob,locationX,locationY])
+    
     
 
-    cam_conv_block_1 = get_conv_block(bn2, filters = filters, kernal_size=(3,3))
-    cam_conv_block_2 = get_conv_block(cam_conv_block_1, filters = filters, kernal_size=(3,3))
-    cam_conv_block_3 = get_conv_block(cam_conv_block_2, filters = filters*2, kernal_size=(3,3))
-    cam_conv_block_4 = get_conv_block(cam_conv_block_3, filters = filters*2, kernal_size=(3,3))
-    cam_conv_block_5 = k.layers.Conv2D(64, (3,3), padding = "same", activation = "linear")(cam_conv_block_4)
-    cam_conv_block_5 = k.layers.LeakyReLU(0.3)(cam_conv_block_5)
+    
+    model  = k.Model(inputs =[inp,inp_tensor],outputs =[prob])
+    return model
 
-    combined_feature_vector = k.layers.Concatenate()([conv_block_3,cam_conv_block_5])
+
     
-    feature_map1 = get_conv_block(combined_feature_vector, filters, (3,3), custom_max_pool_kernel = (4,4))
-    feature_map2 = get_conv_block(feature_map1, filters*2, (3,3), custom_max_pool_kernel = (4,4))
-    feature_map3 = get_conv_block(feature_map2,filters , (3,3), custom_max_pool_kernel = (1,1))
-    
-    
-    
-    # flattened_layer = k.layers.Flatten()(feature_map3)
-    
-    # probabilities = k.layers.Dense(num_points*2, activation = "linear")(flattened_layer)
-    # probabilities = k.layers.LeakyReLU(0.3)(flattened_layer)
-    # probabilities = k.layers.Dense(num_points, activation = "sigmoid")(probabilities)
-    # probabilities = k.layers.Reshape((num_points,1))(probabilities)
-    
-    # # locations = k.layers.Dense(2*num_points,activation = k.layers.LeakyReLU(0.3))(flattened_layer)
-    # locations_x = k.layers.Dense(num_points,activation = "linear")(flattened_layer)
-    # locations_y = k.layers.Dense(num_points,activation = "linear")(flattened_layer)
-    
-    # locations_x = k.layers.Reshape((num_points,1))(locations_x)
-    # locations_y = k.layers.Reshape((num_points,1))(locations_y)
-    # locations = k.layers.Reshape((num_points,2))(locations)
-    
-    feature_map4 = k.layers.Concatenate(axis = -1)([feature_map3,feature_map3,feature_map3])
-    feature_map5 = k.layers.Conv2D(num_points*3*6, (3,3), activation = "linear", padding = "same")(feature_map4)
-    feature_map5 = k.layers.LeakyReLU(0.3)(feature_map5)
-    
-    
-    probabilities = k.layers.Dense(num_points*2, activation = "linear")(feature_map5)
-    probabilities = k.layers.LeakyReLU(0.3)(probabilities)
-    probabilities = k.layers.Dense(num_points, activation = "sigmoid")(probabilities)
-    probabilities = k.layers.Reshape((num_points,1))(probabilities)
-    
-    # locations = k.layers.Dense(2*num_points,activation = k.layers.LeakyReLU(0.3))(flattened_layer)
-    locations_x = k.layers.Dense(num_points,activation = "linear")(feature_map5)
-    locations_y = k.layers.Dense(num_points,activation = "linear")(feature_map5)
-    
-    locations_x = k.layers.Reshape((num_points,1))(locations_x)
-    locations_y = k.layers.Reshape((num_points,1))(locations_y)
-    
-    output = k.layers.Concatenate(axis = -1)([probabilities,locations_x,locations_y])
-    
-    
-    model = k.models.Model(inputs = [input_1, input_2], outputs = output)
+    model  = k.Model(inputs =inp,outputs =x)
     return model
 
 
 def test ():
     ip = (256,256,3)
-    model = get_model(ip,1,10)
-    trandom_tensor_normal = tf.random.normal(shape=[1,256, 256, 3], mean=0.0, stddev=1.0)
-    model(trandom_tensor_normal)
+    model = transformedImageNetwork(1)
+    # trandom_tensor_normal = tf.random.normal(shape=[1,256, 256, 3], mean=0.0, stddev=1.0)
+    # model(trandom_tensor_normal)
     model.summary()
+  
 
 test()
