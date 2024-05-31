@@ -16,7 +16,7 @@ seed = 12345
 
 
 model = get_model(input_shape, len(keypoints), seed)
-# model = tf.keras.models.load_model("/Users/flam/Documents/SLAM/FlamImageTracking/model_loss_0.0034785967.h5")
+model = tf.keras.models.load_model("/Users/flam/Documents/SLAM/FlamImageTracking/model_backup.h5")
 print(model.summary())
 
 generator = CustomDataGenerator(original_image_path, img_path, mat_path, background_images_path, keypoints, batch_size, dataset_size, seed)

@@ -110,7 +110,7 @@ class CustomDataGenerator(k.utils.Sequence):
                 batch_processed_images = batch_processed_images[:1]
                 batch_keypoints = batch_keypoints[:1]
 
-        return [batch_orig_img,batch_processed_images], batch_keypoints
+        return [(batch_orig_img).astype(np.float32)/255.0, batch_processed_images.astype(np.float32)/255.0], batch_keypoints
     
 def custom_loss(y_true, y_pred):
     probability_true, key_points_true = y_true[:,:,0], y_true[:,:,1:] 
@@ -133,7 +133,7 @@ def custom_loss(y_true, y_pred):
     
     with open("SLAM/FlamImageTracking/loss_variation.txt",'a') as writer:
         writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")
-    return bce_loss #+ euclidian_loss
+    return bce_loss + euclidian_loss
 
 def train(generator, model, epochs, optimizer):
     with open("SLAM/FlamImageTracking/train_loss.txt",'w') as writer:
@@ -150,5 +150,6 @@ def train(generator, model, epochs, optimizer):
             gradients = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
             model.save("SLAM/FlamImageTracking/model.h5", save_format='h5')
+            model.save("SLAM/FlamImageTracking/model_backup.h5", save_format='h5')
             if batch%5==0:
                 print(loss)

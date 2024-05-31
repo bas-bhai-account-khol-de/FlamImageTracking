@@ -47,9 +47,10 @@ def plot_losses(file_path, point, groundtruth, input_shape):
 def display_image(image, point):
     transformed_points = np.array((point[0,:,1]*image[0].shape[1], point[0,:,2]*image[0].shape[0]), dtype = np.int16)
     transformed_points = np.transpose(transformed_points)
+    
     for i,transformed_point in enumerate(transformed_points):
         cv2.circle(image[0], transformed_point, radius=3, color=colours[i], thickness=-1)
-    image = np.array(image)
+    # image = np.array(image)
     
     # Position the OpenCV window
     cv2.namedWindow("inference", cv2.WINDOW_NORMAL)
@@ -62,9 +63,13 @@ while True:
     inputs, ground_truths = data_generator.__getitem__(np.random.randint(0,data_generator.__len__()))
     transformed_points = model(inputs)
 
+    inputs[0] = np.array(inputs[0]*255, dtype=np.uint8)
+    inputs[1] = np.array(inputs[1]*255, dtype=np.uint8)
+
+    
     plot_losses(losses_file, transformed_points, ground_truths, inputs[1].shape)
     display_image(inputs[1], transformed_points)
-    # Wait for a key press
+    # Wait for a key pressq
     key = cv2.waitKey(0)  # Wait indefinitely for a key press
 
     if key == ord('q'):  # If 'q' is pressed, exit the loop
