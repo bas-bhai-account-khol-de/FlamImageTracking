@@ -23,7 +23,7 @@ def InceptionBlock(x):
     x= k.layers.concatenate([x,y])
     return x
 
-def InputImageNetwork(input_shape = (128,128,3)):
+def InputImageNetwork(input_shape = (128,128,3))-> k.Model:
     inp = k.Input(input_shape)
 
     x= InceptionBlock(inp)
@@ -48,7 +48,7 @@ def DetectionHead(x,number_points):
     prob = k.layers.Flatten()(prob)
     return prob
 
-def transformedImageNetwork(number_points,inp_shape = (32,32,128),input_shape = (128,128,3)):
+def transformedImageNetwork(number_points,inp_shape = (32,32,128),input_shape = (128,128,3))-> k.Model:
     inp = k.Input(input_shape)
     inp_tensor = k.Input(inp_shape)
 
@@ -80,11 +80,12 @@ def transformedImageNetwork(number_points,inp_shape = (32,32,128),input_shape = 
     locationY = k.layers.Reshape((number_points,1),name="location_y")(locationY)
 
     f = k.layers.concatenate([prob,locationX,locationY])
+
     
     
 
     
-    model  = k.Model(inputs =[inp,inp_tensor],outputs =[f],name='transformed_network')
+    model  = k.Model(inputs =[inp,inp_tensor],outputs =f,name='transformed_network')
     return model
 
 
@@ -94,9 +95,11 @@ def finalModel(number_points, input_shape=(128,128,3)):
     orig = k.Input(input_shape)
     trans = k.Input(input_shape)
     m1= InputImageNetwork()
+    m1.trainable =True
     inp =  m1(orig)
     
     m2 = transformedImageNetwork(number_points)
+    m2.trainable=True
     res= m2([trans,inp])
     model = k.Model(inputs=[orig,trans],outputs =res )
     return model

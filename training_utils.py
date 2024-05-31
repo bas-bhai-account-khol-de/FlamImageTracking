@@ -25,15 +25,21 @@ class CustomDataGenerator(k.utils.Sequence):
         self.batchsize = batch_size
         self.imagesize = image_size
         self.keypoints = keypoints
+        self.indices=np.arange(0,len(self.matrices))
+
+        self.on_epoch_end()
         
     def __len__(self):
         return math.ceil(len(self.matrices)/self.batchsize)
     
+
     def on_epoch_end(self):
-        indices = np.array(range(len(self.matrices)))
-        np.random.shuffle(indices)
-        self.image_paths = self.image_paths[indices]
-        self.matrices = self.matrices[indices]
+        
+
+        np.random.shuffle(self.indices)
+        
+        # self.image_paths = self.image_paths[indices]
+        # self.matrices = self.matrices[indices]
         
     def process_images(self,image, background_image):
     
@@ -55,10 +61,12 @@ class CustomDataGenerator(k.utils.Sequence):
         low = idx * self.batchsize
         high = min(low + self.batchsize, len(self.matrices))
         
-        batch_image_paths = self.image_paths[low:high]
+        index_sec = self.indices[low:high] 
+
+        batch_image_paths = [self.image_paths[i] for i in index_sec]
         if self.batchsize == 1:
             print(batch_image_paths[0])
-        batch_matrices = self.matrices[low:high]
+        batch_matrices = [self.matrices[i] for i in index_sec]
         batch_background_paths = np.random.choice(self.background_images_path,high-low)
         
         batch_images = [cv2.resize(cv2.imread(path, cv2.IMREAD_UNCHANGED), self.imagesize) for path in batch_image_paths]
@@ -135,10 +143,12 @@ def custom_loss(y_true, y_pred):
         writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")
     return bce_loss #+ euclidian_loss
 
-def train(generator, model, epochs, optimizer):
+def train(generator:CustomDataGenerator, model, epochs, optimizer):
     with open("train_loss.txt",'w') as writer:
         writer.write('')
     for epoch in range(epochs):
+        generator.on_epoch_end()
+
         print(f"Epoch {epoch} starting...")
         for batch in range(generator.__len__()):
             x, y = generator.__getitem__(batch)
@@ -149,7 +159,10 @@ def train(generator, model, epochs, optimizer):
                     writer.write(str(loss.numpy()) + '\n')
             gradients = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-            model.save("model.h5", save_format='h5')
-            model.save("model_backup.h5", save_format='h5')
+            try:
+                model.save("model.h5", save_format='h5')
+                model.save("model_backup.h5", save_format='h5')
+            except:
+                print("cant save last model")
             if batch%5==0:
                 print(loss)

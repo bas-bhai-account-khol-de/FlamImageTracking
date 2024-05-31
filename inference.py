@@ -12,7 +12,7 @@ background_images_path = os.path.join(Dataset,"Background")
 original_image_path = os.path.join(os.path.join('test',"img"),"cinema1.jpeg")
 model_path = "model.h5"
 losses_file = "train_loss.txt"
-image_size = (256,256)
+image_size = (128,128)
 original_image = np.expand_dims(cv2.resize(cv2.imread(original_image_path), image_size), axis=0)
 model = k.models.load_model(model_path)
 data_generator = CustomDataGenerator(original_image_path, image_files, matrices_path, background_images_path,np.array([[0.5,0.5],[0,1],[1,0],[0,0],[1,1]]),1,400, None)

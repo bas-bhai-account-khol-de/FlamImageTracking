@@ -12,12 +12,12 @@ dataset_size = 400
 input_shape = (256,256,3)
 epochs = 1000
 batch_size = 10
-optimizer = tf.keras.optimizers.Adam(learning_rate = 0.0001)
+optimizer = tf.keras.optimizers.Adam(learning_rate = 0.1e-3)
 seed = 12345
 
 
 model = model.finalModel(len(keypoints))
-# model = tf.keras.models.load_model("model_backup.h5")
+model = tf.keras.models.load_model("model_backup.h5")
 print(model.summary())
 
 generator = CustomDataGenerator(original_image_path, img_path, mat_path, background_images_path, keypoints, batch_size, dataset_size, seed)
