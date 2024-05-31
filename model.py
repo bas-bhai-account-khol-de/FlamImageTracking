@@ -36,7 +36,7 @@ def InputImageNetwork(input_shape = (128,128,3)):
     x= InceptionBlock(x)
 
     
-    model  = k.Model(inputs =inp,outputs =x)
+    model  = k.Model(inputs =inp,outputs =x,name='input_network')
     return model
 
 def DetectionHead(x,number_points):
@@ -84,7 +84,7 @@ def transformedImageNetwork(number_points,inp_shape = (32,32,128),input_shape = 
     
 
     
-    model  = k.Model(inputs =[inp,inp_tensor],outputs =[prob])
+    model  = k.Model(inputs =[inp,inp_tensor],outputs =[prob],name='transformed_network')
     return model
 
 
@@ -93,9 +93,21 @@ def transformedImageNetwork(number_points,inp_shape = (32,32,128),input_shape = 
     return model
 
 
+def finalModel(number_points, input_shape=(128,128,3)):
+   
+    orig = k.Input(input_shape)
+    trans = k.Input(input_shape)
+    m1= InputImageNetwork()
+    inp =  m1(orig)
+    
+    m2 = transformedImageNetwork(number_points)
+    res= m2([trans,inp])
+    model = k.Model(inputs=[orig,trans],outputs =res )
+    return model
+
 def test ():
     ip = (256,256,3)
-    model = transformedImageNetwork(1)
+    model = finalModel(1)
     # trandom_tensor_normal = tf.random.normal(shape=[1,256, 256, 3], mean=0.0, stddev=1.0)
     # model(trandom_tensor_normal)
     model.summary()
