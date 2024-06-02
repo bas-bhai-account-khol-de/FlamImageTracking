@@ -8,38 +8,55 @@ import os
 import warnings
 warnings.simplefilter('ignore', category=FutureWarning)
 
+from configs import Configurations
+image_size = Configurations["image_configs"]["image_size"][:2]
+keypoints = Configurations["image_configs"]["key_points"]
+
+original_image_path = Configurations["paths"]["original_image_path"]
+images_path = Configurations["paths"]["transformed_images_path"]
+matrices_path = Configurations["paths"]["transformation_matrices_path"]
+background_images_path = Configurations["paths"]["background_images_path"]
+loss_variation_file_path = Configurations["paths"]["loss_variation_path"]
+train_loss_file_path = Configurations["paths"]["train_losses_path"]
+model_path = Configurations["paths"]["model_path"]
+backup_model_path = Configurations["paths"]["backup_model_path"]
+
+
 class CustomDataGenerator(k.utils.Sequence):
-    def __init__(self, original_image_path, images_path, matrices_path, background_images_path, keypoints, batch_size,  dataset_size, seed,image_size = (128, 128)):
+    def __init__(self, batch_size, seed):
         if seed is not None:
-            # k.utils.set_random_seed(seed)
+            k.utils.set_random_seed(seed)
             np.random.seed(seed)
         
         self.original_img = np.array(cv2.resize(cv2.imread(original_image_path), image_size))
         self.image_paths = []
         self.matrices = []
-        for i in range(dataset_size):
-            self.image_paths.append(os.path.join(images_path, "output" + str(i) + ".png"))
-            self.matrices.append(os.path.join(matrices_path,"output" + str(i) + ".pkl") )
+        for file in os.listdir(images_path):
+            if not file.endswith(".png"):
+                continue
+            file_name = file[:-4]
+            self.image_paths.append(os.path.join(images_path, file_name+".png"))
+            self.matrices.append(os.path.join(matrices_path,file_name+".pkl"))
         
-        self.background_images_path = [os.path.join(background_images_path,path)  for path in os.listdir(background_images_path)]
+        self.background_images_path = []
+        for path in os.listdir(background_images_path):
+            if not path.endswith(".jpg"):
+                continue
+            total_path = os.path.join(background_images_path,path)
+            self.background_images_path.append(total_path)
+            
         self.batchsize = batch_size
         self.imagesize = image_size
         self.keypoints = keypoints
         self.indices=np.arange(0,len(self.matrices))
-
-        self.on_epoch_end()
         
     def __len__(self):
         return math.ceil(len(self.matrices)/self.batchsize)
     
 
     def on_epoch_end(self):
-        
-
+        print("Shu")
         np.random.shuffle(self.indices)
-        
-        # self.image_paths = self.image_paths[indices]
-        # self.matrices = self.matrices[indices]
         
     def process_images(self,image, background_image):
     
@@ -139,30 +156,33 @@ def custom_loss(y_true, y_pred):
     euclidian_loss = probability_true * euclidian_loss
     euclidian_loss = k.backend.mean(euclidian_loss)
     
-    with open("loss_variation.txt",'a') as writer:
+    with open(loss_variation_file_path,'a') as writer:
         writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")
-    return bce_loss #+ euclidian_loss
+    return bce_loss + euclidian_loss
 
 def train(generator:CustomDataGenerator, model, epochs, optimizer):
-    with open("train_loss.txt",'w') as writer:
+    with open(train_loss_file_path,'w') as writer:
         writer.write('')
+    with open(loss_variation_file_path,'w') as writer:
+        writer.write('')
+        
     for epoch in range(epochs):
-        generator.on_epoch_end()
-
         print(f"Epoch {epoch} starting...")
         for batch in range(generator.__len__()):
             x, y = generator.__getitem__(batch)
             with tf.GradientTape() as tape:
                 predictions = model(x)
                 loss = custom_loss(y, predictions)  
-                with open("train_loss.txt",'a') as writer:
+                with open(train_loss_file_path,'a') as writer:
                     writer.write(str(loss.numpy()) + '\n')
             gradients = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
             try:
-                model.save("model.h5", save_format='h5')
-                model.save("model_backup.h5", save_format='h5')
+                model.save(model_path, save_format='h5')
+                model.save(backup_model_path, save_format='h5')
             except:
                 print("cant save last model")
             if batch%5==0:
                 print(loss)
+                
+        generator.on_epoch_end()

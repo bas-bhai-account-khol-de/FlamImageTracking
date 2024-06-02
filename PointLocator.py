@@ -25,7 +25,7 @@ def load_and_display_mainImageAndCenter(filename,point = (0.5,0.5)): # point fro
     
     
 
-def load_and_display_trsnformed_image(filename,tras_filename,point = (0.5,0.5)): # point from top left corner image coordinte system
+def load_and_display_trsnformed_image(filename,tras_filename,point): # point from top left corner image coordinte system
     image = cv2.imread(filename)
     h,w,_ = image.shape
     mat =[]

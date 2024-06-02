@@ -1,25 +1,27 @@
 import tensorflow as tf
-import model
+from model import *
 from training_utils import *
-
-Dataset = "Dataset"
-img_path =  os.path.join(Dataset,"img")
-mat_path =os.path.join(Dataset,"trasn")
-background_images_path = os.path.join(Dataset,"Background")
-original_image_path =os.path.join(os.path.join('test',"img"),"cinema1.jpeg")
-keypoints = np.array([[0.5,0.5],[0,1],[1,0],[0,0],[1,1]])
-dataset_size = 400
-input_shape = (256,256,3)
-epochs = 1000
-batch_size = 10
-optimizer = tf.keras.optimizers.Adam(learning_rate = 0.1e-3)
-seed = 12345
+from configs import Configurations
 
 
-model = model.finalModel(len(keypoints))
-model = tf.keras.models.load_model("model_backup.h5")
+img_path = Configurations["paths"]["transformed_images_path"]
+mat_path = Configurations["paths"]["transformation_matrices_path"]
+background_images_path = Configurations["paths"]["background_images_path"]
+original_image_path = Configurations["paths"]["original_image_path"]
+
+keypoints = keypoints = Configurations["image_configs"]["key_points"]
+input_shape = Configurations["image_configs"]["image_size"]
+
+epochs = Configurations["training_configs"]["epochs"]
+batch_size = Configurations["training_configs"]["batch_size"]
+optimizer = tf.keras.optimizers.Adam(learning_rate = Configurations["training_configs"]["learning_rate"])
+seed = Configurations["training_configs"]["seed"]
+
+
+model = get_model(input_shape, len(keypoints))
+# model = tf.keras.models.load_model("model_backup.h5")
 print(model.summary())
 
-generator = CustomDataGenerator(original_image_path, img_path, mat_path, background_images_path, keypoints, batch_size, dataset_size, seed)
+generator = CustomDataGenerator(batch_size, seed)
 
 train(generator,model,epochs, optimizer)
