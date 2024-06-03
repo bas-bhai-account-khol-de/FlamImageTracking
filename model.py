@@ -2,7 +2,6 @@ from tensorflow import keras as k
 import tensorflow as tf
 
 def image_encoder(img):
-    
     x = k.layers.Conv2D(filters = 8, kernel_size = (3,3), padding = "same", activation = "relu")(img)
     x = k.layers.Conv2D(filters = 8, kernel_size = (3,3), padding = "same", activation = "relu")(x)
     x = k.layers.MaxPooling2D()(x)
@@ -18,26 +17,24 @@ def image_encoder(img):
     x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(x)
     x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(x)
     x = k.layers.MaxPooling2D()(x)
-
+    
     return x
 
 def model_body(img):
     x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(img)
     x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(x)
     x = k.layers.MaxPooling2D()(x)
-    
     return x
-    
+
 def get_probs(img, number_of_points):
     x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(img)
     x = k.layers.MaxPooling2D()(x)
-    
     x = k.layers.Flatten()(x)
     x = k.layers.Dense(units = number_of_points*2, activation = "relu")(x)
     x = k.layers.Dense(units = number_of_points, activation = "sigmoid")(x)
     x = k.layers.Reshape((number_of_points, 1))(x)
     
-    return x    
+    return x
 
 def get_locations(img, number_of_points):
     x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(img)

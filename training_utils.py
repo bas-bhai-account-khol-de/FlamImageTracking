@@ -148,13 +148,22 @@ def custom_loss(y_true, y_pred):
 
     probability_true = probability_true.reshape((probability_true.shape[:2]))
     
+    
     euclidian_loss = k.backend.square(key_points_true - key_points_pred)
     euclidian_loss = k.backend.sum(euclidian_loss, axis = -1)
     euclidian_loss = k.backend.sqrt(euclidian_loss)
 
 
     euclidian_loss = probability_true * euclidian_loss
-    euclidian_loss = k.backend.mean(euclidian_loss)
+        # Remove 0s
+    mask = tf.not_equal(euclidian_loss, 0.0)
+
+    # Apply mask to the tensor
+    masked_tensor = tf.where(mask, euclidian_loss, tf.constant(float('nan'), dtype=tf.float32))
+
+    # Calculate the mean ignoring zeros
+    euclidian_loss = tf.reduce_mean(tf.boolean_mask(euclidian_loss, mask))
+    # euclidian_loss = k.backend.mean(euclidian_loss)
     
     with open(loss_variation_file_path,'a') as writer:
         writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")
