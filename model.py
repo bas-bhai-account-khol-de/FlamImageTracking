@@ -1,57 +1,37 @@
 from tensorflow import keras as k
 import tensorflow as tf
+from training_utils import DeformableConv2D
 
-def image_encoder(img):
-    x = k.layers.Conv2D(filters = 8, kernel_size = (3,3), padding = "same", activation = "relu")(img)
-    x = k.layers.Conv2D(filters = 8, kernel_size = (3,3), padding = "same", activation = "relu")(x)
-    x = k.layers.MaxPooling2D()(x)
+def get_trans_img_encoder(img):
+    cam_conv1 = DeformableConv2D(16, (3,3), padding = "same", activation = "relu")(img)
+    cam_conv1 = DeformableConv2D(16, (3,3), padding = "same", activation = "relu")(cam_conv1)
+    cam_conv1 = k.layers.MaxPooling2D((2,2))(cam_conv1)
     
-    x = k.layers.Conv2D(filters = 16, kernel_size = (3,3), padding = "same", activation = "relu")(x)
-    x = k.layers.Conv2D(filters = 16, kernel_size = (3,3), padding = "same", activation = "relu")(x)
-    x = k.layers.MaxPooling2D()(x)
+    cam_conv2 = DeformableConv2D(32, (3,3), padding = "same", activation = "relu")(cam_conv1)
+    cam_conv2 = DeformableConv2D(32, (3,3), padding = "same", activation = "relu")(cam_conv2)
+    cam_conv2 = k.layers.MaxPooling2D((2,2))(cam_conv2)
     
-    x = k.layers.Conv2D(filters = 32, kernel_size = (3,3), padding = "same", activation = "relu")(x)
-    x = k.layers.Conv2D(filters = 32, kernel_size = (3,3), padding = "same", activation = "relu")(x)
-    x = k.layers.MaxPooling2D()(x)
+    cam_conv3 = DeformableConv2D(64, (3,3), padding = "same", activation = "relu")(cam_conv2)
+    cam_conv3 = DeformableConv2D(64, (3,3), padding = "same", activation = "relu")(cam_conv3)
+    cam_conv3 = k.layers.MaxPooling2D((2,2))(cam_conv3)
     
-    x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(x)
-    x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(x)
-    x = k.layers.MaxPooling2D()(x)
+    cam_conv4 = DeformableConv2D(128, (3,3), padding = "same", activation = "relu")(cam_conv3)
+    cam_conv4 = DeformableConv2D(128, (3,3), padding = "same", activation = "relu")(cam_conv4)
+    cam_conv4 = k.layers.MaxPooling2D((2,2))(cam_conv4)
     
-    return x
+    return cam_conv1, cam_conv2, cam_conv3, cam_conv4
 
-def model_body(img):
-    x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(img)
-    x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(x)
-    x = k.layers.MaxPooling2D()(x)
-    return x
+def get_orig_img_encoder(img):
+    conv1 = k.layers.SeparableConv2D(16, (3,3), padding = "same", activation = "relu")(img)
+    conv1 = k.layers.SeparableConv2D(16, (3,3), padding = "same", activation = "relu")(conv1)
+    conv1 = k.layers.MaxPooling2D((4,4))(conv1)
+    
+    conv2 = k.layers.SeparableConv2D(32, (3,3), padding = "same", activation = "relu")(conv1)
+    conv2 = k.layers.SeparableConv2D(32, (3,3), padding = "same", activation = "relu")(conv2)
+    conv2 = k.layers.MaxPooling2D((4,4))(conv2)
+    
+    return conv2
 
-def get_probs(img, number_of_points):
-    x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(img)
-    x = k.layers.MaxPooling2D()(x)
-    x = k.layers.Flatten()(x)
-    x = k.layers.Dense(units = number_of_points*2, activation = "relu")(x)
-    x = k.layers.Dense(units = number_of_points, activation = "sigmoid")(x)
-    x = k.layers.Reshape((number_of_points, 1))(x)
-    
-    return x
-
-def get_locations(img, number_of_points):
-    x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(img)
-    x = k.layers.Conv2D(filters = 64, kernel_size = (3,3), padding = "same", activation = "relu")(x)
-    x = k.layers.MaxPooling2D()(x)
-    
-    location_x = k.layers.Flatten()(x)
-    location_x = k.layers.Dense(units = number_of_points*2, activation = "relu")(location_x)
-    location_x = k.layers.Dense(units = number_of_points, activation = "linear")(location_x)
-    location_x = k.layers.Reshape((number_of_points, 1))(location_x)
-    
-    location_y = k.layers.Flatten()(x)
-    location_y = k.layers.Dense(units = number_of_points*2, activation = "relu")(location_y)
-    location_y = k.layers.Dense(units = number_of_points, activation = "linear")(location_y)
-    location_y = k.layers.Reshape((number_of_points, 1))(location_y)
-    
-    return [location_x,location_y]
 
 def get_model(input_shape, number_of_points):
     
@@ -61,18 +41,38 @@ def get_model(input_shape, number_of_points):
     bn1 = k.layers.BatchNormalization()(inp1)
     bn2 = k.layers.BatchNormalization()(inp2)
     
-    features_orig_img = image_encoder(bn1)
-    features_tran_img = image_encoder(bn2)
+    og_img = get_orig_img_encoder(bn1)
+    trans_img1, trans_img2, trans_img3, trans_img4 = get_trans_img_encoder(bn2)
     
-    features = k.layers.Concatenate(axis = -1)([features_orig_img, features_tran_img])
-    processed_features = model_body(features)
+    conc = k.layers.Concatenate(axis = -1)([og_img, trans_img4])
     
-    probs = get_probs(processed_features, number_of_points)
-    locations = get_locations(processed_features, number_of_points)
-    output = k.layers.Concatenate(axis = -1)([probs, *locations])
+    feature_map = DeformableConv2D(64, (3,3), padding = "same", activation = "relu")(conc)
+    feature_map = DeformableConv2D(64, (3,3), padding = "same", activation = "relu")(feature_map)
+    feature_map = k.layers.MaxPooling2D()(feature_map)
+    
+    probs = k.layers.Flatten()(feature_map)
+    probs = k.layers.Dense(number_of_points*2, activation = "relu")(probs)
+    probs = k.layers.Dense(number_of_points, activation = "sigmoid")(probs)
+    probs = k.layers.Reshape((number_of_points,1))(probs)
+    
+    feature_map1 = DeformableConv2D(32, (3,3), padding = "same", activation = "relu")(feature_map)
+    feature_map1 = DeformableConv2D(32, (3,3), padding = "same", activation = "relu")(feature_map1)
+    feature_map1 = k.layers.MaxPooling2D()(feature_map1)
+    
+    feature_map2 = DeformableConv2D(32, (3,3), padding = "same", activation = "relu")(feature_map1)
+    feature_map2 = DeformableConv2D(32, (3,3), padding = "same", activation = "relu")(feature_map2)
+    feature_map2 = k.layers.MaxPooling2D()(feature_map2)
+    
+    locations = k.layers.Flatten()(feature_map2)
+    locationsX = k.layers.Dense(number_of_points)(locations)
+    locationsY = k.layers.Dense(number_of_points)(locations)
+    
+    locationsX = k.layers.Reshape((number_of_points,1))(locationsX)
+    locationsY = k.layers.Reshape((number_of_points,1))(locationsY)
+    output = k.layers.Concatenate(axis = -1)([probs, locationsX, locationsY])
     
     model = k.models.Model(inputs = [inp1, inp2], outputs = output)
     return model
 
-model = get_model((256,256,3), 5)
-model.summary()
+# model = get_model((256,256,3), 5)
+# model.summary()

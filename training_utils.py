@@ -21,7 +21,108 @@ train_loss_file_path = Configurations["paths"]["train_losses_path"]
 model_path = Configurations["paths"]["model_path"]
 backup_model_path = Configurations["paths"]["backup_model_path"]
 
+class DeformableConv2D(k.layers.Layer):
+    def __init__(self, filters, kernel_size, strides=(1, 1), padding='same', dilation_rate=(1, 1), activation = "linear",**kwargs):
+        super(DeformableConv2D, self).__init__(**kwargs)
+        self.filters = filters
+        self.kernel_size = kernel_size
+        self.strides = strides
+        self.padding = padding
+        self.dilation_rate = dilation_rate
+        self.activation = activation
+        
+        # Define the convolution for generating offsets
+        self.offset_conv = k.layers.Conv2D(filters=2,# * kernel_size[0] * kernel_size[1],
+                                           kernel_size=kernel_size,
+                                           strides=strides,
+                                           padding=padding,
+                                           dilation_rate=dilation_rate,
+                                           activation = activation,
+                                           kernel_initializer='zeros',
+                                           bias_initializer='zeros')
 
+        # Define the convolution for deformable convolution
+        self.deform_conv = k.layers.Conv2D(filters=filters,
+                                           kernel_size=kernel_size,
+                                           strides=(1, 1),
+                                           padding='same',
+                                           dilation_rate=(1, 1))
+
+    def call(self, inputs):
+        offsets = self.offset_conv(inputs)
+        outputs = self.deform_conv(self._apply_offsets(inputs, offsets))
+        return outputs
+    
+    def _apply_offsets(self, inputs, offsets):
+        batch_size, height, width, channels = tf.shape(inputs)
+        offset_h, offset_w = tf.split(offsets, 2, axis=-1)
+        
+        # Generate a meshgrid to apply the offsets
+        y, x = tf.meshgrid(tf.range(height), tf.range(width), indexing='ij')
+        y = tf.cast(y, dtype=offsets.dtype)
+        x = tf.cast(x, dtype=offsets.dtype)
+        
+        y = tf.reshape(y, (1,y.shape[0], y.shape[1], 1))
+        y = np.tile(y, (offset_h.shape[0],1,1,offset_h.shape[3]))
+        
+        x = tf.reshape(x, (1,x.shape[0], x.shape[1], 1))
+        x = np.tile(x, (offset_w.shape[0],1,1,offset_w.shape[3]))
+        
+        y = y + offset_h
+        x = x + offset_w
+        
+        y = tf.clip_by_value(y, 0, tf.cast(height - 1, dtype=y.dtype))
+        x = tf.clip_by_value(x, 0, tf.cast(width - 1, dtype=x.dtype))
+        
+        batch_indices = tf.reshape(tf.range(batch_size), (batch_size, 1, 1, 1))
+        batch_indices = np.tile(batch_indices, (1, height, width, offset_h.shape[3]))
+    
+        indices = tf.stack([batch_indices, y, x], axis=-1)
+        indices = tf.reshape(indices, (-1, 3))
+        indices = tf.cast(indices, dtype=tf.int32)
+        
+        output = tf.gather_nd(inputs, indices)
+        output = tf.reshape(output, (batch_size, height, width, channels))
+        
+        return output
+    
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], input_shape[1], input_shape[2], self.filters)
+    
+    def build(self, input_shape):
+        super(DeformableConv2D, self).build(input_shape)
+    
+    def get_config(self):
+        config = super(DeformableConv2D, self).get_config()
+        config.update({
+            'filters': self.filters,
+            'kernel_size': self.kernel_size,
+            'strides': self.strides,
+            'padding': self.padding,
+            'dilation': self.dilation_rate,
+            'activation': self.activation,
+            'dilation_rate': self.dilation_rate,
+            'offset_config': tf.keras.layers.serialize(self.offset_conv),
+            'deform_config': tf.keras.layers.serialize(self.deform_conv)
+        })
+        return config
+    
+    @classmethod
+    def from_config(cls, config):
+        layer1 = tf.keras.layers.deserialize(config.pop('offset_config'))
+        layer2 = tf.keras.layers.deserialize(config.pop('deform_config'))
+        
+        instance = cls(config.pop('filters'),
+                       config.pop('kernel_size'),
+                       config.pop('strides'),
+                       config.pop('padding'),
+                       config.pop('dilation_rate'),
+                       config.pop('activation'))
+        
+        instance.offset_conv = layer1
+        instance.deform_conv = layer2
+        return instance
+    
 class CustomDataGenerator(k.utils.Sequence):
     def __init__(self, batch_size, seed):
         if seed is not None:
@@ -97,7 +198,6 @@ class CustomDataGenerator(k.utils.Sequence):
             batch_processed_images.append(self.process_images(batch_images[i], batch_background_images[i]))
             
         batch_processed_images, probabilities = [list(t) for t in zip(*batch_processed_images)]
-        batch_orig_img = np.tile(self.original_img, (len(batch_images), 1, 1, 1))
         
         batch_keypoints = []
         for i in range(len(batch_matrices)):
@@ -158,16 +258,12 @@ def custom_loss(y_true, y_pred):
         # Remove 0s
     mask = tf.not_equal(euclidian_loss, 0.0)
 
-    # Apply mask to the tensor
-    masked_tensor = tf.where(mask, euclidian_loss, tf.constant(float('nan'), dtype=tf.float32))
-
     # Calculate the mean ignoring zeros
     euclidian_loss = tf.reduce_mean(tf.boolean_mask(euclidian_loss, mask))
-    # euclidian_loss = k.backend.mean(euclidian_loss)
     
     with open(loss_variation_file_path,'a') as writer:
         writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")
-    return bce_loss + euclidian_loss
+    return euclidian_loss + bce_loss
 
 def train(generator:CustomDataGenerator, model, epochs, optimizer):
     with open(train_loss_file_path,'w') as writer:
@@ -187,10 +283,12 @@ def train(generator:CustomDataGenerator, model, epochs, optimizer):
             gradients = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
             try:
-                model.save(model_path, save_format='h5')
-                model.save(backup_model_path, save_format='h5')
-            except:
+                model.save(model_path)
+                model.save(backup_model_path)
+            except Exception as e:
+                print("========= Note ================")
                 print("cant save last model")
+                print(e)
             if batch%5==0:
                 print(loss)
                 
