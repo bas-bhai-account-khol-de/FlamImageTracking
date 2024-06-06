@@ -37,7 +37,6 @@ class DeformableConv2D(k.layers.Layer):
                                            strides=strides,
                                            padding=padding,
                                            dilation_rate=dilation_rate,
-                                           activation = activation,
                                            kernel_initializer='zeros',
                                            bias_initializer='zeros')
 
@@ -260,6 +259,7 @@ def custom_loss(y_true, y_pred):
 
     # Calculate the mean ignoring zeros
     euclidian_loss = tf.reduce_mean(tf.boolean_mask(euclidian_loss, mask))
+    euclidian_loss = euclidian_loss * image_size[0]
     
     with open(loss_variation_file_path,'a') as writer:
         writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")

@@ -17,7 +17,7 @@ image_size = Configurations["image_configs"]["image_size"][:2]
 colours = Configurations["inference_configs"]["colours"]
 
 original_image = np.expand_dims(cv2.resize(cv2.imread(original_image_path), image_size), axis=0)
-data_generator = CustomDataGenerator(1,Configurations["training_configs"]["seed"])
+data_generator = CustomDataGenerator(1, None)
 plt.ion()
 
 def plot_losses(file_path, point, groundtruth, input_shape):
