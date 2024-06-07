@@ -24,8 +24,9 @@ def plot_losses(file_path, point, groundtruth, input_shape):
     with open(file_path, 'r') as file:
         lines = file.readlines()
     
-    probability = str(np.float16(point[0,:,0]))
-    transformed_point = np.array((point[0,:,1]*input_shape[2], point[0,:,2]*input_shape[1]), dtype=np.int16)
+    probability = point[0][0]
+
+    transformed_point = np.array((point[1][0,:,0], point[1][0,:,1]), dtype=np.int16)
     GT_probability = str(np.float16(groundtruth[0,:,0]))
     GT_transformed_point = np.array((groundtruth[0,:,1]*input_shape[2] ,groundtruth[0,:,2]*input_shape[1]), dtype = np.int16)
     
@@ -46,7 +47,7 @@ def plot_losses(file_path, point, groundtruth, input_shape):
 
 # Function to display an image using OpenCV
 def display_image(image, point):
-    transformed_points = np.array((point[0,:,1]*image[0].shape[1], point[0,:,2]*image[0].shape[0]), dtype = np.int16)
+    transformed_points = np.array((point[1][0,:,0], point[1][0,:,1]), dtype = np.int16)
     transformed_points = np.transpose(transformed_points)
     
     for i,transformed_point in enumerate(transformed_points):
@@ -67,6 +68,16 @@ while True:
 
     inputs[0] = np.array(inputs[0]*255, dtype=np.uint8)
     inputs[1] = np.array(inputs[1]*255, dtype=np.uint8)
+    
+    # Indices from output
+    new_transformed_points = np.zeros((transformed_points[1].shape[0], transformed_points[1].shape[-1], 2))
+    for batch in range(transformed_points[1].shape[0]):
+        for kp in range(transformed_points[1].shape[-1]):
+            max_indices = np.argmax(transformed_points[1][batch,:,:,kp])
+            max_x_indices, max_y_indices = np.unravel_index(max_indices, (256, 256))
+            new_transformed_points[batch,kp] = (max_x_indices, max_y_indices)
+    
+    transformed_points[1] = new_transformed_points
 
     
     plot_losses(losses_file, transformed_points, ground_truths, inputs[1].shape)

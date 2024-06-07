@@ -22,7 +22,7 @@ model_path = Configurations["paths"]["model_path"]
 backup_model_path = Configurations["paths"]["backup_model_path"]
 
 class DeformableConv2D(k.layers.Layer):
-    def __init__(self, filters, kernel_size, strides=(1, 1), padding='same', dilation_rate=(1, 1), activation = "linear",**kwargs):
+    def __init__(self, filters, kernel_size, strides=(1, 1), padding='same', dilation_rate=(1, 1), activation = "relu",**kwargs):
         super(DeformableConv2D, self).__init__(**kwargs)
         self.filters = filters
         self.kernel_size = kernel_size
@@ -36,17 +36,18 @@ class DeformableConv2D(k.layers.Layer):
                                            kernel_size=kernel_size,
                                            strides=strides,
                                            padding=padding,
-                                           dilation_rate=dilation_rate,
-                                           kernel_initializer='zeros',
-                                           bias_initializer='zeros')
+                                           dilation_rate=dilation_rate,)
+                                        #    kernel_initializer='zeros',
+                                        #    bias_initializer='zeros')
 
         # Define the convolution for deformable convolution
         self.deform_conv = k.layers.Conv2D(filters=filters,
                                            kernel_size=kernel_size,
                                            strides=(1, 1),
                                            padding='same',
+                                           activation = activation,
                                            dilation_rate=(1, 1))
-
+        
     def call(self, inputs):
         offsets = self.offset_conv(inputs)
         outputs = self.deform_conv(self._apply_offsets(inputs, offsets))
@@ -235,31 +236,42 @@ class CustomDataGenerator(k.utils.Sequence):
                 batch_keypoints = batch_keypoints[:1]
 
         return [(batch_orig_img).astype(np.float32)/255.0, batch_processed_images.astype(np.float32)/255.0], batch_keypoints
-    
+
+def get_3D_keypoints(key_points_pred, key_points_true):
+    diag = np.sqrt((1**2) + (1**2))
+    var = 1/(1-(np.e**(-diag)))
+    temp = np.zeros_like(key_points_pred)
+    for image in range(key_points_true.shape[0]):
+        for keypoint in range(key_points_true.shape[-1]):
+            x = key_points_true[image,keypoint,0]
+            y = key_points_true[image,keypoint,1]
+            for i in range(key_points_pred[image].shape[0]):
+                for j in range(key_points_pred[image][i].shape[0]):
+                    dist = np.sqrt(((x-(i/image_size[0]))**2) + ((y-(j/image_size[0]))**2))
+                    temp[image,i,j,keypoint] = 1 - (var * (1-(np.e**(-dist))))
+            
+    return temp
+
 def custom_loss(y_true, y_pred):
     probability_true, key_points_true = y_true[:,:,0], y_true[:,:,1:] 
-    probability_pred, key_points_pred = y_pred[:,:,0], y_pred[:,:,1:]
+    probability_pred, key_points_pred = y_pred[0], y_pred[1]
     
- 
+    key_points_true = get_3D_keypoints(key_points_pred, key_points_true)
+    
     bce = k.losses.BinaryCrossentropy()
     bce_loss = bce(probability_true, probability_pred)
 
-
     probability_true = probability_true.reshape((probability_true.shape[:2]))
     
-    
-    euclidian_loss = k.backend.square(key_points_true - key_points_pred)
-    euclidian_loss = k.backend.sum(euclidian_loss, axis = -1)
-    euclidian_loss = k.backend.sqrt(euclidian_loss)
-
-
+    euclidian_loss = abs(key_points_true - key_points_pred)
+    euclidian_loss = np.mean(euclidian_loss, axis=(1,2))
     euclidian_loss = probability_true * euclidian_loss
         # Remove 0s
     mask = tf.not_equal(euclidian_loss, 0.0)
-
     # Calculate the mean ignoring zeros
     euclidian_loss = tf.reduce_mean(tf.boolean_mask(euclidian_loss, mask))
-    euclidian_loss = euclidian_loss * image_size[0]
+    euclidian_loss = tf.cast(euclidian_loss, tf.float16)
+    bce_loss = tf.cast(bce_loss, tf.float16)
     
     with open(loss_variation_file_path,'a') as writer:
         writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")

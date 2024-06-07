@@ -24,7 +24,7 @@ Configurations = {
     "training_configs": {
       "epochs": 1000,
       "batch_size": 40,
-      "learning_rate": 0.0001,
+      "learning_rate": 0.00001,
       "seed" : 12345,  
     },
     
