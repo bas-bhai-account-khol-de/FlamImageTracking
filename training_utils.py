@@ -6,11 +6,16 @@ import cv2
 import math
 import os
 import warnings
+from configs import Configurations
+
+tf.experimental.numpy.experimental_enable_numpy_behavior()
 warnings.simplefilter('ignore', category=FutureWarning)
 
-from configs import Configurations
 image_size = Configurations["image_configs"]["image_size"][:2]
 keypoints = Configurations["image_configs"]["key_points"]
+
+val_epoch_threshold = Configurations["training_configs"]["val_epoch_threshold"]
+val_drop_threshold = Configurations["training_configs"]["val_drop_threshold"]
 
 original_image_path = Configurations["paths"]["original_image_path"]
 images_path = Configurations["paths"]["transformed_images_path"]
@@ -18,11 +23,12 @@ matrices_path = Configurations["paths"]["transformation_matrices_path"]
 background_images_path = Configurations["paths"]["background_images_path"]
 loss_variation_file_path = Configurations["paths"]["loss_variation_path"]
 train_loss_file_path = Configurations["paths"]["train_losses_path"]
+val_loss_file_path = Configurations["paths"]["val_losses_path"]
 model_path = Configurations["paths"]["model_path"]
 backup_model_path = Configurations["paths"]["backup_model_path"]
 
 class DeformableConv2D(k.layers.Layer):
-    def __init__(self, filters, kernel_size, strides=(1, 1), padding='same', dilation_rate=(1, 1), activation = "relu",**kwargs):
+    def __init__(self, filters, kernel_size, strides=(1, 1), padding='same', dilation_rate=(1, 1), activation = "linear",**kwargs):
         super(DeformableConv2D, self).__init__(**kwargs)
         self.filters = filters
         self.kernel_size = kernel_size
@@ -36,18 +42,17 @@ class DeformableConv2D(k.layers.Layer):
                                            kernel_size=kernel_size,
                                            strides=strides,
                                            padding=padding,
-                                           dilation_rate=dilation_rate,)
-                                        #    kernel_initializer='zeros',
-                                        #    bias_initializer='zeros')
-
+                                           dilation_rate=dilation_rate,
+                                           kernel_initializer='zeros',
+                                           bias_initializer='zeros')
+        
         # Define the convolution for deformable convolution
         self.deform_conv = k.layers.Conv2D(filters=filters,
                                            kernel_size=kernel_size,
                                            strides=(1, 1),
                                            padding='same',
-                                           activation = activation,
                                            dilation_rate=(1, 1))
-        
+
     def call(self, inputs):
         offsets = self.offset_conv(inputs)
         outputs = self.deform_conv(self._apply_offsets(inputs, offsets))
@@ -61,7 +66,6 @@ class DeformableConv2D(k.layers.Layer):
         y, x = tf.meshgrid(tf.range(height), tf.range(width), indexing='ij')
         y = tf.cast(y, dtype=offsets.dtype)
         x = tf.cast(x, dtype=offsets.dtype)
-        
         y = tf.reshape(y, (1,y.shape[0], y.shape[1], 1))
         y = np.tile(y, (offset_h.shape[0],1,1,offset_h.shape[3]))
         
@@ -99,7 +103,6 @@ class DeformableConv2D(k.layers.Layer):
             'kernel_size': self.kernel_size,
             'strides': self.strides,
             'padding': self.padding,
-            'dilation': self.dilation_rate,
             'activation': self.activation,
             'dilation_rate': self.dilation_rate,
             'offset_config': tf.keras.layers.serialize(self.offset_conv),
@@ -156,11 +159,9 @@ class CustomDataGenerator(k.utils.Sequence):
     
 
     def on_epoch_end(self):
-        print("Shu")
         np.random.shuffle(self.indices)
         
     def process_images(self,image, background_image):
-    
         rgb_r, rgb_g, rgb_b = cv2.split(background_image)
         rgba_r, rgba_g, rgba_b, rgba_a = cv2.split(image)
         r = np.where(rgba_a == 255, rgba_r, rgb_r)
@@ -179,8 +180,7 @@ class CustomDataGenerator(k.utils.Sequence):
         low = idx * self.batchsize
         high = min(low + self.batchsize, len(self.matrices))
         
-        index_sec = self.indices[low:high] 
-
+        index_sec = self.indices[low:high]
         batch_image_paths = [self.image_paths[i] for i in index_sec]
         if self.batchsize == 1:
             print(batch_image_paths[0])
@@ -236,57 +236,56 @@ class CustomDataGenerator(k.utils.Sequence):
                 batch_keypoints = batch_keypoints[:1]
 
         return [(batch_orig_img).astype(np.float32)/255.0, batch_processed_images.astype(np.float32)/255.0], batch_keypoints
-
-def get_3D_keypoints(key_points_pred, key_points_true):
-    diag = np.sqrt((1**2) + (1**2))
-    var = 1/(1-(np.e**(-diag)))
-    temp = np.zeros_like(key_points_pred)
-    for image in range(key_points_true.shape[0]):
-        for keypoint in range(key_points_true.shape[-1]):
-            x = key_points_true[image,keypoint,0]
-            y = key_points_true[image,keypoint,1]
-            for i in range(key_points_pred[image].shape[0]):
-                for j in range(key_points_pred[image][i].shape[0]):
-                    dist = np.sqrt(((x-(i/image_size[0]))**2) + ((y-(j/image_size[0]))**2))
-                    temp[image,i,j,keypoint] = 1 - (var * (1-(np.e**(-dist))))
-            
-    return temp
-
-def custom_loss(y_true, y_pred):
-    probability_true, key_points_true = y_true[:,:,0], y_true[:,:,1:] 
-    probability_pred, key_points_pred = y_pred[0], y_pred[1]
     
-    key_points_true = get_3D_keypoints(key_points_pred, key_points_true)
+def custom_loss(y_true, y_pred, is_val = False):
+    probability_true, key_points_true = y_true[:,:,0], y_true[:,:,1:] 
+    probability_pred, key_points_pred = y_pred[:,:,0], y_pred[:,:,1:]
     
     bce = k.losses.BinaryCrossentropy()
     bce_loss = bce(probability_true, probability_pred)
+    
+    euclidian_loss = k.backend.square(key_points_true - key_points_pred)
+    euclidian_loss = k.backend.sum(euclidian_loss, axis = -1)
+    euclidian_loss = k.backend.sqrt(euclidian_loss)
 
     probability_true = probability_true.reshape((probability_true.shape[:2]))
-    
-    euclidian_loss = abs(key_points_true - key_points_pred)
-    euclidian_loss = np.mean(euclidian_loss, axis=(1,2))
+    ## Validation loss when we need to validate
+    if is_val:
+        probability_pred = probability_pred.reshape((probability_pred.shape[:2]))
+        tps = np.where(probability_pred * probability_true, 1, 0)
+        euclidian_loss = tps * euclidian_loss
+            # Remove 0s
+        mask = tf.not_equal(euclidian_loss, 0.0)
+
+        # Calculate the mean ignoring zeros
+        euclidian_loss = tf.reduce_mean(tf.boolean_mask(euclidian_loss, mask))
+        
+        return euclidian_loss
+      
     euclidian_loss = probability_true * euclidian_loss
-        # Remove 0s
+    # Remove 0s
     mask = tf.not_equal(euclidian_loss, 0.0)
+
     # Calculate the mean ignoring zeros
     euclidian_loss = tf.reduce_mean(tf.boolean_mask(euclidian_loss, mask))
-    euclidian_loss = tf.cast(euclidian_loss, tf.float16)
-    bce_loss = tf.cast(bce_loss, tf.float16)
     
     with open(loss_variation_file_path,'a') as writer:
         writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")
     return euclidian_loss + bce_loss
 
-def train(generator:CustomDataGenerator, model, epochs, optimizer):
+def train(train_generator:CustomDataGenerator, val_generator:CustomDataGenerator, model, epochs, optimizer):
     with open(train_loss_file_path,'w') as writer:
         writer.write('')
-    with open(loss_variation_file_path,'w') as writer:
+    with open(val_loss_file_path,'w') as writer:
         writer.write('')
-        
+    
+    min_loss = np.inf
+    number_rise_in_amp = 0
+    
     for epoch in range(epochs):
         print(f"Epoch {epoch} starting...")
-        for batch in range(generator.__len__()):
-            x, y = generator.__getitem__(batch)
+        for batch in range(train_generator.__len__()):
+            x, y = train_generator.__getitem__(batch)
             with tf.GradientTape() as tape:
                 predictions = model(x)
                 loss = custom_loss(y, predictions)  
@@ -301,7 +300,29 @@ def train(generator:CustomDataGenerator, model, epochs, optimizer):
                 print("========= Note ================")
                 print("cant save last model")
                 print(e)
+            
+            val_x, val_y = val_generator.__getitem__(np.random.randint(0,val_generator.__len__()))
+            val_predictions = model(val_x)
+            val_loss = custom_loss(val_y, val_predictions, is_val = True)
+            with open(val_loss_file_path,'a') as writer:
+                    writer.write(str(val_loss.numpy()) + '\n')
+            if val_loss - val_drop_threshold >= min_loss:
+                number_rise_in_amp += 1
+                if number_rise_in_amp >= val_epoch_threshold:
+                    print("Ending because of overfitting")
+                    return
+            else:
+                number_rise_in_amp = 0
+            
+            print("===================", number_rise_in_amp, "===================")
+            print("current_val_loss", val_loss)
+            print("least loss yet", min_loss)
+            if val_loss < min_loss:
+                min_loss = val_loss
+                
             if batch%5==0:
                 print(loss)
                 
-        generator.on_epoch_end()
+        train_generator.on_epoch_end()
+        val_generator.on_epoch_end()
+

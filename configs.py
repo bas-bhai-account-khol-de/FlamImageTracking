@@ -18,12 +18,16 @@ Configurations = {
         "model_path": "model.h5",
         "backup_model_path": "model_backup.h5",
         "train_losses_path": "train_loss.txt",
+        "val_losses_path": "val_loss.txt",
         "loss_variation_path": "loss_variation.txt",
     },
     
     "training_configs": {
       "epochs": 1000,
-      "batch_size": 40,
+      "train_batch_size": 40,
+      "val_batch_size": 10,
+      "val_epoch_threshold": 25,
+      "val_drop_threshold": 0,
       "learning_rate": 0.00001,
       "seed" : 12345,  
     },

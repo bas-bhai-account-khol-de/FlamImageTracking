@@ -13,7 +13,8 @@ keypoints = keypoints = Configurations["image_configs"]["key_points"]
 input_shape = Configurations["image_configs"]["image_size"]
 
 epochs = Configurations["training_configs"]["epochs"]
-batch_size = Configurations["training_configs"]["batch_size"]
+train_batch_size = Configurations["training_configs"]["train_batch_size"]
+val_batch_size = Configurations["training_configs"]["val_batch_size"]
 optimizer = tf.keras.optimizers.Adam(learning_rate = Configurations["training_configs"]["learning_rate"])
 seed = Configurations["training_configs"]["seed"]
 
@@ -22,6 +23,7 @@ model = get_model(input_shape, len(keypoints))
 # model = tf.keras.models.load_model("model_backup.h5")
 print(model.summary())
 
-generator = CustomDataGenerator(batch_size, seed)
+train_generator = CustomDataGenerator(train_batch_size, seed)
+val_generator = CustomDataGenerator(val_batch_size, seed)
 
-train(generator,model,epochs, optimizer)
+train(train_generator, val_generator, model, epochs, optimizer)
