@@ -1,5 +1,4 @@
 import tensorflow as tf
-from tensorflow import keras as k
 from PointLocator import load_and_display_trsnformed_image
 import numpy as np
 import cv2
@@ -16,6 +15,9 @@ keypoints = Configurations["image_configs"]["key_points"]
 
 val_epoch_threshold = Configurations["training_configs"]["val_epoch_threshold"]
 val_drop_threshold = Configurations["training_configs"]["val_drop_threshold"]
+weight = Configurations["training_configs"]["lambda"]
+mp = Configurations["training_configs"]["mp"]
+mn = Configurations["training_configs"]["mn"]
 
 original_image_path = Configurations["paths"]["original_image_path"]
 images_path = Configurations["paths"]["transformed_images_path"]
@@ -27,7 +29,80 @@ val_loss_file_path = Configurations["paths"]["val_losses_path"]
 model_path = Configurations["paths"]["model_path"]
 backup_model_path = Configurations["paths"]["backup_model_path"]
 
-class DeformableConv2D(k.layers.Layer):
+
+class ChannelNormalization(tf.keras.layers.Layer):
+    def __init__(self):
+        super(ChannelNormalization, self).__init__()
+
+    def call(self, inputs):
+        norm = tf.norm(inputs, axis=-1, keepdims=True)
+        norm = tf.where(norm != 0, norm, 1)
+        normalized_inputs = inputs / norm
+        return normalized_inputs
+    
+    def compute_output_shape(self, input_shape):
+        return input_shape
+    
+    def build(self, input_shape):
+        super(ChannelNormalization, self).build(input_shape)
+        
+    def get_config(self):
+        return super(ChannelNormalization, self).get_config()
+    
+    @classmethod
+    def from_config(cls, config):
+        instance = cls()
+        return instance
+    
+class ResizingLayer(tf.keras.layers.Layer):
+    def __init__(self, outputsize, **kwargs):
+        super(ResizingLayer, self).__init__(**kwargs)
+        self.outputsize = outputsize
+    
+    def call(self, feature_map):
+        return tf.image.resize(feature_map, self.outputsize, method='bicubic')
+    
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], self.outputsize[0], self.outputsize[1], input_shape[3])
+    
+    def build(self, input_shape):
+        super(ResizingLayer, self).build(input_shape)
+        
+    def get_config(self):
+        config = super(ResizingLayer, self).get_config()
+        config.update({
+            'outputsize': self.outputsize,
+        })
+        return config
+    
+    @classmethod
+    def from_config(cls, config):
+        instance = cls(config.pop("outputsize"))
+        return instance
+    
+class DroppingLayer(tf.keras.layers.Layer):
+    def __init__(self, **kwargs):
+        super(DroppingLayer, self).__init__(**kwargs)
+    
+    def call(self, feature_map):
+        return feature_map[:,:,:,:64]
+    
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], input_shape[1], input_shape[2], 64)
+    
+    def build(self, input_shape):
+        super(DroppingLayer, self).build(input_shape)
+        
+    def get_config(self):
+        config = super(DroppingLayer, self).get_config()
+        return config
+    
+    @classmethod
+    def from_config(cls, config):
+        instance = cls()
+        return instance
+    
+class DeformableConv2D(tf.keras.layers.Layer):
     def __init__(self, filters, kernel_size, strides=(1, 1), padding='same', dilation_rate=(1, 1), activation = "linear",**kwargs):
         super(DeformableConv2D, self).__init__(**kwargs)
         self.filters = filters
@@ -38,7 +113,7 @@ class DeformableConv2D(k.layers.Layer):
         self.activation = activation
         
         # Define the convolution for generating offsets
-        self.offset_conv = k.layers.Conv2D(filters=2,# * kernel_size[0] * kernel_size[1],
+        self.offset_conv = tf.keras.layers.Conv2D(filters=2,# * kernel_size[0] * kernel_size[1],
                                            kernel_size=kernel_size,
                                            strides=strides,
                                            padding=padding,
@@ -47,7 +122,7 @@ class DeformableConv2D(k.layers.Layer):
                                            bias_initializer='zeros')
         
         # Define the convolution for deformable convolution
-        self.deform_conv = k.layers.Conv2D(filters=filters,
+        self.deform_conv = tf.keras.layers.Conv2D(filters=filters,
                                            kernel_size=kernel_size,
                                            strides=(1, 1),
                                            padding='same',
@@ -126,10 +201,10 @@ class DeformableConv2D(k.layers.Layer):
         instance.deform_conv = layer2
         return instance
     
-class CustomDataGenerator(k.utils.Sequence):
+class CustomDataGenerator(tf.keras.utils.Sequence):
     def __init__(self, batch_size, seed):
         if seed is not None:
-            k.utils.set_random_seed(seed)
+            tf.keras.utils.set_random_seed(seed)
             np.random.seed(seed)
         
         self.original_img = np.array(cv2.resize(cv2.imread(original_image_path), image_size))
@@ -236,48 +311,105 @@ class CustomDataGenerator(k.utils.Sequence):
                 batch_keypoints = batch_keypoints[:1]
 
         return [(batch_orig_img).astype(np.float32)/255.0, batch_processed_images.astype(np.float32)/255.0], batch_keypoints
+
+def get_corresponding_points(key_points_orig, descriptors_orig, descriptors_trans):
+    orig_descs = descriptors_orig[0, key_points_orig[:, 0], key_points_orig[:, 1], :]
+    trans_descs = descriptors_trans[0].reshape(-1, descriptors_trans.shape[-1])
+    cosine_similarities = np.dot(orig_descs, trans_descs.T)
+    max_indices = np.argmax(cosine_similarities, axis=1)
+    key_points_trans = np.column_stack(np.unravel_index(max_indices, (descriptors_trans.shape[1], descriptors_trans.shape[2])))
+    return key_points_trans
+
+def images_to_patches(images):
+    n, h, w = images.shape
+    patches = images.reshape(n, h//8, 8, w//8, 8).transpose(0, 1, 3, 2, 4).reshape(n, h//8, w//8, 64)
+    return patches
+
+def patches_to_images(patches):
+    n, p1, p2, c = patches.shape
+    images = patches.reshape(n, p1, p2, 8, 8)
+    images = tf.transpose(images,(0, 1, 3, 2, 4)).reshape(n, image_size[0], image_size[0])
+    return images
+
+def detection_loss(probability_true, probability_pred):
+    cce = tf.keras.losses.CategoricalCrossentropy()
+    loss = cce(probability_true, probability_pred)
+    return tf.keras.ops.mean(loss)
+
+
+def descriptor_loss(orig_descriptor, trans_descriptor):
+    a, b, c, d = orig_descriptor.shape
     
-def custom_loss(y_true, y_pred, is_val = False):
+    j_coords, k_coords = np.meshgrid(np.arange(b), np.arange(c), indexing='ij')
+    l_coords, m_coords = np.meshgrid(np.arange(b), np.arange(c), indexing='ij')
+    
+    dist_sq = (j_coords[:, :, None, None] - l_coords[None, None, :, :])**2 + (k_coords[:, :, None, None] - m_coords[None, None, :, :])**2
+    s_mask = dist_sq < 64
+    
+    total_sum = 0.0
+    for i in range(a):
+        orig_flat = orig_descriptor[i].reshape(b * c, d)
+        trans_flat = trans_descriptor[i].reshape(b * c, d)
+        dot_products = np.dot(orig_flat, trans_flat.T)
+        dot_products = dot_products.reshape(b, c, b, c)
+        s_term = s_mask * np.maximum(0, mp - dot_products)
+        non_s_term = (~s_mask) * np.maximum(0, dot_products - mn)
+        total_sum += np.sum(s_term + non_s_term)
+    return total_sum / ((b * c) ** 2)
+
+def create_65_layers(map):
+    map = images_to_patches(map)
+    layer_65 = np.ones((*map.shape[:-1], 1), dtype=int)
+    all_zeros = np.all(map == 0, axis= -1)
+    layer_65[:,:,:,0] = all_zeros
+    map = np.concatenate([map, layer_65], axis = -1)
+    return map
+ 
+def custom_loss(y_true, predictions_orig, predictions_trans, is_val = False):
     probability_true, key_points_true = y_true[:,:,0], y_true[:,:,1:] 
-    probability_pred, key_points_pred = y_pred[:,:,0], y_pred[:,:,1:]
+    orig_detect, orig_descriptor = predictions_orig
+    trans_detect, trans_descriptor = predictions_trans
     
-    bce = k.losses.BinaryCrossentropy()
-    bce_loss = bce(probability_true, probability_pred)
+    ## Transformed points into maps
+    trans_true_kps_map = np.zeros((probability_true.shape[0],*image_size))
+    for i in range(probability_true.shape[0]):
+        for j in range(probability_true.shape[1]):
+            if probability_true[i][j]:
+                x = int(image_size[0]*key_points_true[i][j][0])
+                x = 0 if x == 0 else x - 1
+                y = int(image_size[1]*key_points_true[i][j][1])
+                y = 0 if y == 0 else y - 1
+                trans_true_kps_map[i][x][y] = 1
+    trans_true_kps_map = create_65_layers(trans_true_kps_map)
     
-    euclidian_loss = k.backend.square(key_points_true - key_points_pred)
-    euclidian_loss = k.backend.sum(euclidian_loss, axis = -1)
-    euclidian_loss = k.backend.sqrt(euclidian_loss)
-
-    probability_true = probability_true.reshape((probability_true.shape[:2]))
-    ## Validation loss when we need to validate
-    if is_val:
-        probability_pred = probability_pred.reshape((probability_pred.shape[:2]))
-        tps = np.where(probability_pred * probability_true, 1, 0)
-        euclidian_loss = tps * euclidian_loss
-            # Remove 0s
-        mask = tf.not_equal(euclidian_loss, 0.0)
-
-        # Calculate the mean ignoring zeros
-        euclidian_loss = tf.reduce_mean(tf.boolean_mask(euclidian_loss, mask))
-        
-        return euclidian_loss
-      
-    euclidian_loss = probability_true * euclidian_loss
-    # Remove 0s
-    mask = tf.not_equal(euclidian_loss, 0.0)
-
-    # Calculate the mean ignoring zeros
-    euclidian_loss = tf.reduce_mean(tf.boolean_mask(euclidian_loss, mask))
+    ## Original points into maps
+    orig_true_kps_map = np.zeros((probability_true.shape[0],*image_size))
+    for i in range(probability_true.shape[0]):
+        for j in range(keypoints.shape[0]):
+            x = int(image_size[0]*keypoints[j][0])
+            x = 0 if x == 0 else x - 1
+            y = int(image_size[1]*keypoints[j][1])
+            y = 0 if y == 0 else y - 1
+            orig_true_kps_map[i][x][y] = 1
+    orig_true_kps_map = create_65_layers(orig_true_kps_map)
     
-    with open(loss_variation_file_path,'a') as writer:
-        writer.write(f"bce_loss: {str(bce_loss)}, euclidian_loss:  {str(euclidian_loss)} \n")
-    return euclidian_loss + bce_loss
-
+    orig_detection_loss = detection_loss(orig_true_kps_map, orig_detect)
+    trans_detection_loss = detection_loss(trans_true_kps_map, trans_detect)
+    combined_descriptor_loss = descriptor_loss(orig_descriptor, trans_descriptor)
+    
+    if not is_val:
+        with open(loss_variation_file_path,'a') as writer:
+            writer.write(f"Orig_detection_loss: {orig_detection_loss}, trans_detection_loss: {trans_detection_loss}, combined_descriptor_loss: {combined_descriptor_loss} \n")
+            
+    return orig_detection_loss + trans_detection_loss #+ (weight * combined_descriptor_loss)
+                    
 def train(train_generator:CustomDataGenerator, val_generator:CustomDataGenerator, model, epochs, optimizer):
     with open(train_loss_file_path,'w') as writer:
         writer.write('')
     with open(val_loss_file_path,'w') as writer:
         writer.write('')
+    with open(loss_variation_file_path,'w') as writer:
+            writer.write('')
     
     min_loss = np.inf
     number_rise_in_amp = 0
@@ -287,8 +419,9 @@ def train(train_generator:CustomDataGenerator, val_generator:CustomDataGenerator
         for batch in range(train_generator.__len__()):
             x, y = train_generator.__getitem__(batch)
             with tf.GradientTape() as tape:
-                predictions = model(x)
-                loss = custom_loss(y, predictions)  
+                predictions_orig = model(x[0])
+                predictions_trans = model(x[1])
+                loss = custom_loss(y, predictions_orig, predictions_trans)  
                 with open(train_loss_file_path,'a') as writer:
                     writer.write(str(loss.numpy()) + '\n')
             gradients = tape.gradient(loss, model.trainable_variables)
@@ -301,9 +434,12 @@ def train(train_generator:CustomDataGenerator, val_generator:CustomDataGenerator
                 print("cant save last model")
                 print(e)
             
+            
+            ### ======= Validation loop ============
             val_x, val_y = val_generator.__getitem__(np.random.randint(0,val_generator.__len__()))
-            val_predictions = model(val_x)
-            val_loss = custom_loss(val_y, val_predictions, is_val = True)
+            val_predictions_orig = model(val_x[0])
+            val_predictions_trans = model(val_x[1])
+            val_loss = custom_loss(val_y, val_predictions_orig, val_predictions_trans, is_val = True)
             with open(val_loss_file_path,'a') as writer:
                     writer.write(str(val_loss.numpy()) + '\n')
             if val_loss - val_drop_threshold >= min_loss:
@@ -313,16 +449,14 @@ def train(train_generator:CustomDataGenerator, val_generator:CustomDataGenerator
                     return
             else:
                 number_rise_in_amp = 0
-            
-            print("===================", number_rise_in_amp, "===================")
-            print("current_val_loss", val_loss)
-            print("least loss yet", min_loss)
+                
             if val_loss < min_loss:
                 min_loss = val_loss
                 
+            ### ======= Validation loop ============
+            
             if batch%5==0:
                 print(loss)
                 
         train_generator.on_epoch_end()
         val_generator.on_epoch_end()
-

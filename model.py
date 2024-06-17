@@ -1,78 +1,47 @@
-from tensorflow import keras as k
 import tensorflow as tf
-from training_utils import DeformableConv2D
+from training_utils import DeformableConv2D, DroppingLayer, ResizingLayer, ChannelNormalization
 
-def get_orig_img_encoder(img):
-    cam_conv1 = k.layers.Conv2D(16, (3,3), padding = "same", activation = "relu")(img)
-    cam_conv1 = k.layers.Conv2D(16, (3,3), padding = "same", activation = "relu")(cam_conv1)
-    cam_conv1 = k.layers.MaxPool2D((2,2))(cam_conv1)
-    
-    cam_conv2 = k.layers.Conv2D(32, (3,3), padding = "same", activation = "relu")(cam_conv1)
-    cam_conv2 = k.layers.Conv2D(32, (3,3), padding = "same", activation = "relu")(cam_conv2)
-    cam_conv2 = k.layers.MaxPool2D((2,2))(cam_conv2)
-    
-    cam_conv3 = k.layers.Conv2D(64, (3,3), padding = "same", activation = "relu")(cam_conv2)
-    cam_conv3 = k.layers.Conv2D(64, (3,3), padding = "same", activation = "relu")(cam_conv3)
-    cam_conv3 = k.layers.MaxPool2D((2,2))(cam_conv3)
-    
-    cam_conv4 = k.layers.Conv2D(128, (3,3), padding = "same", activation = "relu")(cam_conv3)
-    cam_conv4 = k.layers.Conv2D(128, (3,3), padding = "same", activation = "relu")(cam_conv4)
-    cam_conv4 = k.layers.MaxPool2D((2,2))(cam_conv4)
-    
-    
-    return cam_conv1, cam_conv2, cam_conv3, cam_conv4
+def VGG_network(inp, filters):
+     conv1 = tf.keras.layers.Conv2D(filters, (3,3), padding = "same")(inp)
+     conv1 = tf.keras.layers.LeakyReLU()(conv1)
+     conv1 = tf.keras.layers.Conv2D(filters, (3,3), padding = "same")(conv1)
+     conv1 = tf.keras.layers.LeakyReLU()(conv1)
+     conv1 = tf.keras.layers.MaxPooling2D((2,2))(conv1)
+     
+     conv2 = tf.keras.layers.Conv2D(2*filters, (3,3), padding = "same")(conv1)
+     conv2 = tf.keras.layers.LeakyReLU()(conv2)
+     conv2 = tf.keras.layers.Conv2D(2*filters, (3,3), padding = "same")(conv2)
+     conv2 = tf.keras.layers.LeakyReLU()(conv2)
+     conv2 = tf.keras.layers.MaxPooling2D((2,2))(conv2)
+     
+     conv3 = tf.keras.layers.Conv2D(4*filters, (3,3), padding = "same")(conv2)
+     conv3 = tf.keras.layers.LeakyReLU()(conv3)
+     conv3 = tf.keras.layers.Conv2D(4*filters, (3,3), padding = "same")(conv3)
+     conv3 = tf.keras.layers.LeakyReLU()(conv3)
+     conv3 = tf.keras.layers.MaxPooling2D((2,2))(conv3)
+     
+     return conv3
 
-def get_trans_img_encoder(img):
-    cam_conv1 = DeformableConv2D(16, (3,3), padding = "same", activation = "relu")(img)
-    cam_conv1 = DeformableConv2D(16, (3,3), padding = "same", activation = "relu")(cam_conv1)
-    cam_conv1 = k.layers.MaxPool2D((2,2))(cam_conv1)
-    
-    cam_conv2 = DeformableConv2D(32, (3,3), padding = "same", activation = "relu")(cam_conv1)
-    cam_conv2 = DeformableConv2D(32, (3,3), padding = "same", activation = "relu")(cam_conv2)
-    cam_conv2 = k.layers.MaxPool2D((2,2))(cam_conv2)
-    
-    cam_conv3 = DeformableConv2D(64, (3,3), padding = "same", activation = "relu")(cam_conv2)
-    cam_conv3 = DeformableConv2D(64, (3,3), padding = "same", activation = "relu")(cam_conv3)
-    cam_conv3 = k.layers.MaxPool2D((2,2))(cam_conv3)
-    
-    cam_conv4 = DeformableConv2D(128, (3,3), padding = "same", activation = "relu")(cam_conv3)
-    cam_conv4 = DeformableConv2D(128, (3,3), padding = "same", activation = "relu")(cam_conv4)
-    cam_conv4 = k.layers.MaxPool2D((2,2))(cam_conv4)
-    
-    return cam_conv1, cam_conv2, cam_conv3, cam_conv4
+def detection_head(inp, input_shape):
+    out = tf.keras.layers.Conv2D(65, (3,3), padding = "same", activation = "softmax")(inp)
+    return out
 
-def decoder(feature_map, number_of_points, final_activation):
-    output = k.layers.Dense(2*number_of_points)(feature_map)
-    output = k.layers.LeakyReLU(0.3)(output)
-    output = k.layers.Dense(number_of_points, activation = final_activation)(output)
-    output = k.layers.Reshape((number_of_points, 1))(output)
-    return output
+def descriptor_head(inp, input_shape, descriptor_size):
+    out = tf.keras.layers.Conv2D(descriptor_size, (3,3), padding = "same", activation = "linear")(inp)
+    out = ResizingLayer(input_shape[:2])(out)
+    out = ChannelNormalization()(out)
+    return out
 
-def get_model(input_shape, number_of_points):
+def get_model(input_shape, descriptor_length):
     
-    inp1 = k.Input(input_shape)
-    inp2 = k.Input(input_shape)
-    
-    bn1 = inp1 #k.layers.BatchNormalization()(inp1)
-    bn2 = inp2 #k.layers.BatchNormalization()(inp2)
-    
-    _, _, _, org_img = get_orig_img_encoder(bn1)
-    trns_img1, trns_img2, trns_img3, trns_img4 = get_trans_img_encoder(bn2)
-    
-    conc = k.layers.Concatenate(axis = -1)([trns_img4, org_img])
-    feature_map = k.layers.Conv2D(128, (3,3), padding = "same", activation = "relu")(conc)
-    feature_map = k.layers.Conv2D(32, (3,3), padding = "same", activation = "relu")(feature_map)
-    
-    feature_map = k.layers.Flatten()(feature_map)
-    
-    probs = decoder(feature_map,number_of_points, "sigmoid")
-    locationX = decoder(feature_map, number_of_points, "linear")
-    locationY = decoder(feature_map, number_of_points, "linear")
-    
-    output = k.layers.Concatenate(axis = -1)([probs, locationX, locationY])
-    
-    model = k.models.Model(inputs = [inp1, inp2], outputs = output)
+    inp1 = tf.keras.layers.Input(input_shape)
+    bn1 = tf.keras.layers.BatchNormalization()(inp1)
+    orig_img = VGG_network(bn1, 64)
+    orig_detect = detection_head(orig_img, input_shape)
+    orig_descriptor = descriptor_head(orig_img, input_shape, descriptor_length)
+    model = tf.keras.models.Model(inputs = inp1, outputs = [orig_detect, orig_descriptor])
     return model
-
-# model = get_model((256,256,3), 5)
-# model.summary()
+    
+model = get_model((256,256,3), 256)
+model.summary()
+model.save("testing_model.h5")

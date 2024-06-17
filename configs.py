@@ -6,7 +6,8 @@ import numpy as np
 
 Configurations = {
     "image_configs": {
-            "image_size": (256,256,3),
+            "image_size": (128,128,3),
+            "descriptor_length": 128,
             "key_points": np.array([[0.5,0.5],[0,1],[1,0],[0,0],[1,1]])
         },
     
@@ -23,16 +24,20 @@ Configurations = {
     },
     
     "training_configs": {
+      "lambda": 0,
+      "mp": 1,
+      "mn": 0.2,
       "epochs": 1000,
       "train_batch_size": 40,
       "val_batch_size": 10,
       "val_epoch_threshold": 25,
       "val_drop_threshold": 0,
-      "learning_rate": 0.00001,
+      "learning_rate": 0.0001,
       "seed" : 12345,  
     },
     
     "inference_configs": {
-        "colours": [[0,0,255],[0,255,0],[255,0,0],[255,255,0],[255,0,255],[0,255,255]],   
+        "colours": [[0,0,255],[0,255,0],[255,0,0],[255,255,0],[255,0,255],[0,255,255]],
+        "inference_thresh": 0.5,
     }
 }
