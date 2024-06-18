@@ -24,7 +24,7 @@ Configurations = {
     },
     
     "training_configs": {
-      "lambda": 0,
+      "lambda": 0.001,
       "mp": 1,
       "mn": 0.2,
       "epochs": 1000,

@@ -36,7 +36,7 @@ def get_model(input_shape, descriptor_length):
     
     inp1 = tf.keras.layers.Input(input_shape)
     bn1 = tf.keras.layers.BatchNormalization()(inp1)
-    orig_img = VGG_network(bn1, 64)
+    orig_img = VGG_network(bn1, 16)
     orig_detect = detection_head(orig_img, input_shape)
     orig_descriptor = descriptor_head(orig_img, input_shape, descriptor_length)
     model = tf.keras.models.Model(inputs = inp1, outputs = [orig_detect, orig_descriptor])

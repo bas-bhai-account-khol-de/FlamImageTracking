@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
-
+import seaborn as sns
 from training_utils import CustomDataGenerator, DeformableConv2D, DroppingLayer, ResizingLayer, ChannelNormalization, get_corresponding_points, patches_to_images
 from configs import Configurations
 
@@ -83,11 +83,13 @@ while True:
     key_points_orig = post_process_probs(key_points_orig)
     key_points_trans = post_process_probs(key_points_trans)
     
+    sns.heatmap(key_points_orig[0], cbar=False)
+    
     orig_points_to_be_shown = key_points_orig > inference_thresh
     trans_points_to_be_shown = key_points_trans > inference_thresh
     
     sorted_indices = np.argsort(key_points_orig, axis=None)[::-1]
-    sorted_indices_coords = np.unravel_index(sorted_indices, key_points_orig.shape)
+    sorted_indices_coords = np.unravel_index(sorted_indices, key_points_orig.shape[1:])
     key_points_orig = np.array([sorted_indices_coords[0][:5], sorted_indices_coords[1][:5]])
     key_points_orig = np.transpose(key_points_orig)
     key_points_trans = get_corresponding_points(key_points_orig, descriptors_orig, descriptors_trans)

@@ -401,7 +401,7 @@ def custom_loss(y_true, predictions_orig, predictions_trans, is_val = False):
         with open(loss_variation_file_path,'a') as writer:
             writer.write(f"Orig_detection_loss: {orig_detection_loss}, trans_detection_loss: {trans_detection_loss}, combined_descriptor_loss: {combined_descriptor_loss} \n")
             
-    return orig_detection_loss + trans_detection_loss #+ (weight * combined_descriptor_loss)
+    return orig_detection_loss + trans_detection_loss + (weight * combined_descriptor_loss)
                     
 def train(train_generator:CustomDataGenerator, val_generator:CustomDataGenerator, model, epochs, optimizer):
     with open(train_loss_file_path,'w') as writer:
