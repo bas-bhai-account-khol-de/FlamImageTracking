@@ -20,7 +20,7 @@ optimizer = tf.keras.optimizers.Adam(learning_rate = Configurations["training_co
 seed = Configurations["training_configs"]["seed"]
 
 
-model = get_model(input_shape, descriptor_length)
+model = get_model(input_shape, len(keypoints))
 # model = tf.keras.models.load_model("model_backup.h5")
 print(model.summary())
 
