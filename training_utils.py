@@ -152,23 +152,23 @@ def process_GT(probability_true, key_points_true):
                 x = int(x * (image_size[1]-1))
                 y = int(y * (image_size[0]-1))
                 gt = np.zeros((image_size[0], image_size[1]))
-                max_dist = 0
-                if (((x - 0)**2) + ((y - 0)**2)) > (max_dist**2):
-                    max_dist = np.sqrt(((x - 0)**2) + ((y - 0)**2))
+                max_dist_square = 0
+                if (((x - 0)**2) + ((y - 0)**2)) > (max_dist_square):
+                    max_dist_square = ((x - 0)**2) + ((y - 0)**2)
                 
-                if (((x - image_size[0])**2) + ((y - 0)**2)) > (max_dist**2):
-                    max_dist = np.sqrt(((x - image_size[0])**2) + ((y - 0)**2))
+                if (((x - image_size[0])**2) + ((y - 0)**2)) > (max_dist_square):
+                    max_dist_square = ((x - image_size[0])**2) + ((y - 0)**2)
                 
-                if (((x - image_size[0])**2) + ((y - image_size[1])**2)) > (max_dist**2):
-                    max_dist = np.sqrt(((x - image_size[0])**2) + ((y - image_size[1])**2))
+                if (((x - image_size[0])**2) + ((y - image_size[1])**2)) > (max_dist_square):
+                    max_dist_square = ((x - image_size[0])**2) + ((y - image_size[1])**2)
                 
-                if (((x - 0)**2) + ((y - image_size[1])**2)) > (max_dist**2):
-                    max_dist = np.sqrt(((x - 0)**2) + ((y - image_size[1])**2))
+                if (((x - 0)**2) + ((y - image_size[1])**2)) > (max_dist_square):
+                    max_dist_square = ((x - 0)**2) + ((y - image_size[1])**2)
                 
                 for i in range(image_size[0]):
                     for j in range(image_size[1]):
-                        dist = np.sqrt((i - x) ** 2 + (j - y) ** 2)
-                        gt[i][j] = (max_dist - dist) / max_dist
+                        dist_square = (i - x) ** 2 + (j - y) ** 2
+                        gt[i][j] = (max_dist_square - dist_square) / max_dist_square
                 GT[img, :, :, kp] = gt
                 
     return GT
