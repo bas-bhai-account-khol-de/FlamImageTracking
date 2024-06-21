@@ -6,7 +6,7 @@ import numpy as np
 
 Configurations = {
     "image_configs": {
-            "image_size": (128,128,3),
+            "image_size": (256,256,3),
             "descriptor_length": 128,
             "key_points": np.array([[0.5,0.5],[0,1],[1,0],[0,0],[1,1]])
         },

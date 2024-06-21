@@ -17,6 +17,7 @@ val_losses_file = Configurations["paths"]["val_losses_path"]
 image_size = Configurations["image_configs"]["image_size"][:2]
 
 colours = Configurations["inference_configs"]["colours"]
+inference_thresh = Configurations["inference_configs"]["inference_thresh"]
 
 original_image = np.expand_dims(cv2.resize(cv2.imread(original_image_path), image_size), axis=0)
 data_generator = CustomDataGenerator(1, None)
@@ -46,7 +47,7 @@ def plot_losses(train_file_path, val_file_path, point, groundtruth, input_shape)
     plt.plot(train_data,color='b', label = """Training loss""")
     plt.plot(val_data,color='r', label = """Val loss""")
     plt.title(name)
-    plt.xlabel('Iteration')
+    plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend(loc='upper right')
     plt.tight_layout()
@@ -59,7 +60,9 @@ def display_image(image, point):
     transformed_points = np.transpose(transformed_points)
     
     for i,transformed_point in enumerate(transformed_points):
-        cv2.circle(image[0], transformed_point, radius=3, color=colours[i], thickness=-1)
+        if point[0][i][0] > inference_thresh:
+            cv2.circle(image[0], transformed_point, radius=3, color=colours[i], thickness=-1)
+            cv2.putText(image[0], str(i + 1), transformed_point, cv2.FONT_HERSHEY_SIMPLEX, 0.5, colours[i], 2, cv2.LINE_4)
     # image = np.array(image)
     
     # Position the OpenCV window
