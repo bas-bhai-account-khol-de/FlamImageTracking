@@ -6,7 +6,31 @@ import glm as m
 roation  = 0
 
 
+<<<<<<< Updated upstream
 def main():
+=======
+
+roation  = random.randint(15,1000)
+window_size =640
+r_scn = 1
+screen_ratio=2 #screen pixel ratio
+output =cv2.imread('output.png')
+final_points = []
+points=[]
+save =True
+
+def save_image(image, filename):
+    image = Image.fromarray(image)
+    image.save(filename)
+    # extra()
+
+def draw_circle(event, x, y, flags, param):
+    print('Helo')
+    if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click
+        print(f"Mouse clicked at: ({x}, {y})")
+        
+def main(orig_image_id):
+>>>>>>> Stashed changes
     # Initialize GLFW
     if not glfw.init():
         return
@@ -80,10 +104,26 @@ def main():
     glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
 
     # Vertex attributes
+<<<<<<< Updated upstream
     position = glGetAttribLocation(shader_program, 'position')
     glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 0, None)
     glEnableVertexAttribArray(position)
 
+=======
+    # position = glGetAttribLocation(shader_program, 'position')
+    # glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 0, None)
+    # glEnableVertexAttribArray(position)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * vertices.itemsize, None)
+    glEnableVertexAttribArray(0)
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * vertices.itemsize, ctypes.c_void_p(3 * vertices.itemsize))
+    glEnableVertexAttribArray(1)
+    
+    #texture setup
+    global points
+    image,points =getMarkedIMageandPoints(orig_image_id)
+    points = [[x[0],x[1]] for x in points]
+    texture_id   = create_texture(image)
+>>>>>>> Stashed changes
 #     # Loop until the user closes the window
     while not glfw.window_should_close(window):
         # Render here
@@ -103,8 +143,64 @@ def main():
 
         # Poll for and process events
         glfw.poll_events()
+<<<<<<< Updated upstream
 
     glfw.terminate()
+=======
+        if count < 100 and save :
+            width, height = glfw.get_window_size(window)
+            img=capture_image(width,height)
+            
+            save_image(img, 'Dataset/img/output_' + str(orig_image_id) + "_" + str(count) +'.png')
+            with open('Dataset/trasn/output_' + str(orig_image_id) + "_" + str(count) +'.pkl', 'wb') as f:
+                pickle.dump(rotmat.to_list(), f)
+            # global output
+            # output = cv2.imread('output.png')
+        else:
+            exit()
+            
+            
+        if(count == 20):
+            # cv2.destroyAllWindows()
+            # glfw.terminate()
+            # break
+            pass
+        # cv2.imshow("destination ",output)
+        
+        #save image
+        
+        count +=1
+        
+        
+        
+        
+    points = points[:len(final_points)]
+    homo,_ = cv2.findHomography(640*np.float32(points),640*np.float32(final_points))
+    
+    print(homo)
+    print(points)
+    print(final_points)
+    w,h =glfw.get_window_size(window)
+    image = cv2.resize(image,(w,h))
+    final_image =cv2.warpPerspective(image,homo,(w,h))
+    cv2.imshow('final image',final_image)
+    cv2.waitKey(0)
+    
+    # global output
+    # output = cv2.imread('output.png')
+    # reference=cv2.imread('keypoints.jpg')
+    # cv2.namedWindow('destination')
+    
+    
+    # while True:
+    #     # cv2.imshow("reference ",reference)
+    #     cv2.imshow("destination ",output)
+    #     cv2.setMouseCallback('destination',draw_circle)
+    #     if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to quit
+    #         break
+    # exit()
+    return
+>>>>>>> Stashed changes
 
 def compile_shader(shader_type, source):
     shader = glCreateShader(shader_type)
@@ -162,12 +258,64 @@ def extra(program):
     glUniformMatrix4fv(loc,1,GL_FALSE,m.value_ptr(rotMat))
 
 
+<<<<<<< Updated upstream
+=======
+def create_texture(image):
+    
+    img, img_data = load_image(image)
+    
+    texture_id = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, texture_id)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width, img.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
+
+    return texture_id
+
+
+def capture_image(width, height):
+    glReadBuffer(GL_FRONT)
+    height =  screen_ratio*height
+    width = screen_ratio*width
+    data = glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE)
+    image = np.frombuffer(data, dtype=np.uint8).reshape(height, width, 4)
+    image = np.flip(image, axis=0)  # Flip the image vertically
+    return image
+
+def mouse_button_callback(window, button, action, mods):
+    if button == glfw.MOUSE_BUTTON_LEFT and action == glfw.PRESS:
+        global points
+        global final_points
+        if(len(final_points) >= len(points)):
+            return
+        w,h=glfw.get_cursor_pos(window)
+        W,H =  glfw.get_window_size(window)
+        final_points.append([w/W,h/H])
+        print(points)
+        print(final_points)
+        w = screen_ratio *w
+        h= screen_ratio *h
+        print("Left mouse button pressed "+str(w) + " " +str(h) )
+        cv2.circle(output,(int(w),int(h)),6,(0,0,255),-1)
+       
+    elif button == glfw.MOUSE_BUTTON_RIGHT and action == glfw.PRESS:
+        print("Right mouse button pressed")
+        
+
+>>>>>>> Stashed changes
     
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
    
+<<<<<<< Updated upstream
 print('hello')
 roation=0
 main()
     # extra()
+=======
+    print('hello')
+    # roation=0
+    orig_image_id = 5
+    main(orig_image_id)
+>>>>>>> Stashed changes

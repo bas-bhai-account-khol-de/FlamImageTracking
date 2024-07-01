@@ -9,6 +9,7 @@ finalwidth  = 1000
 ratio   = 1;
 print('proof of Assumption :  we can calculate the $ T $ only by determining the new location on features points in screent at $t=t_n$. Following is the proof of assumption')
 
+<<<<<<< Updated upstream
 def CalculateHomoGraphy(orignalPoints,finalPoints,transform):  
     orignal = np.array(orignalPoints).reshape(10,4).transpose()
     final = np.array(finalPoints).reshape(10,4).transpose()
@@ -21,6 +22,20 @@ def CalculateHomoGraphy(orignalPoints,finalPoints,transform):
     
     
     A_pseudo_inv = np.linalg.pinv(orignal)
+=======
+def getMarkedIMageandPoints(orig_image_id):
+    #parameters ``
+
+    global finalwidth
+    finalwidth  = 1000
+    global ratio
+    ratio   = 1;
+
+    orig_image  =  cv2.imread(f"Dataset/orig_images/image_{orig_image_id}.jpeg")
+    # resize to a particular size
+    res_orig_image  =  resizeRatio(orig_image,finalwidth)
+    ratio  =  res_orig_image.shape[0]/res_orig_image.shape[1]
+>>>>>>> Stashed changes
 
     
     pt = np.dot(final,A_pseudo_inv)
