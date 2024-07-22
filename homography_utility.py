@@ -8,7 +8,7 @@ image_size = 256
 descriptor_dimension = 4
 
 max_rotation = 360
-rotation_multiple = 36
+rotation_multiple = 5
 max_skew = 0
 
 margin = 1.5
