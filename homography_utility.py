@@ -2,7 +2,7 @@ import numpy as np
 import math
 import tensorflow as tf
 
-patch_size = 64
+patch_size = 32
 kernel_size = patch_size
 image_size = 256
 descriptor_dimension = 4
@@ -18,6 +18,8 @@ optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
 cos_sim = tf.keras.losses.CosineSimilarity()
 batch_size = 1
 epochs = 100000
+max_similarity_threshold = 0.95
+similarity_ratio_threshold = 0.85
 num_filters = 8
 model_path = "filters_model.h5"
 backup_model_path = "backup_filters_model.h5"
