@@ -2,7 +2,7 @@ import numpy as np
 import math
 import tensorflow as tf
 
-patch_size = 32
+patch_size = 64
 kernel_size = patch_size
 image_size = 256
 descriptor_dimension = 4
@@ -60,7 +60,7 @@ def get_random_homography_matrix(whole_image =False):
     homography_matrix = np.matmul(top_right_to_centre if whole_image else patch_top_right_to_centre, np.matmul(np.matmul(skew_matrix, rotation_matrix), centre_to_top_right if whole_image else  patch_centre_to_top_right))
     return homography_matrix
 
-def get_fixed_homography_matrix(val):
+def get_fixed_homography_matrix(val, whole_image = False):
     rotation = rotation_multiple*val
     # rotation = (rotation//rotation_multiple) * rotation_multiple
     skew_x = np.random.uniform(0,max_skew)
@@ -68,5 +68,5 @@ def get_fixed_homography_matrix(val):
 
     rotation_matrix = create_rotational_matrix(rotation)
     skew_matrix = create_skew_matrix(skew_x, skew_y)
-    homography_matrix = np.matmul(patch_top_right_to_centre, np.matmul(np.matmul(skew_matrix, rotation_matrix), patch_centre_to_top_right))
+    homography_matrix = np.matmul(top_right_to_centre if whole_image else patch_top_right_to_centre, np.matmul(np.matmul(skew_matrix, rotation_matrix), centre_to_top_right if whole_image else  patch_centre_to_top_right))
     return homography_matrix
