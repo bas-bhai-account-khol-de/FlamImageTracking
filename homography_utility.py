@@ -18,6 +18,8 @@ optimizer = tf.keras.optimizers.Adam(learning_rate = learning_rate)
 cos_sim = tf.keras.losses.CosineSimilarity()
 batch_size = 1
 epochs = 100000
+max_similarity_threshold = 0.95
+similarity_ratio_threshold = 0.85
 num_filters = 8
 model_path = "filters_model.h5"
 backup_model_path = "backup_filters_model.h5"
@@ -60,7 +62,7 @@ def get_random_homography_matrix(whole_image =False):
     homography_matrix = np.matmul(top_right_to_centre if whole_image else patch_top_right_to_centre, np.matmul(np.matmul(skew_matrix, rotation_matrix), centre_to_top_right if whole_image else  patch_centre_to_top_right))
     return homography_matrix
 
-def get_fixed_homography_matrix(val):
+def get_fixed_homography_matrix(val, whole_image = False):
     rotation = rotation_multiple*val
     # rotation = (rotation//rotation_multiple) * rotation_multiple
     skew_x = np.random.uniform(0,max_skew)
@@ -68,5 +70,5 @@ def get_fixed_homography_matrix(val):
 
     rotation_matrix = create_rotational_matrix(rotation)
     skew_matrix = create_skew_matrix(skew_x, skew_y)
-    homography_matrix = np.matmul(patch_top_right_to_centre, np.matmul(np.matmul(skew_matrix, rotation_matrix), patch_centre_to_top_right))
+    homography_matrix = np.matmul(top_right_to_centre if whole_image else patch_top_right_to_centre, np.matmul(np.matmul(skew_matrix, rotation_matrix), centre_to_top_right if whole_image else  patch_centre_to_top_right))
     return homography_matrix
