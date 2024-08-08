@@ -25,7 +25,7 @@ def load_and_display_mainImageAndCenter(filename,point = (0.5,0.5)): # point fro
     
     
 
-def load_and_display_trsnformed_image(filename,tras_filename,point = (0.5,0.5)): # point from top left corner image coordinte system
+def load_and_display_trsnformed_image(filename,tras_filename,point = (0.5,0.5),show=False): # point from top left corner image coordinte system
     image = cv2.imread(filename)
     h,w,_ = image.shape
     mat =[]
@@ -41,14 +41,16 @@ def load_and_display_trsnformed_image(filename,tras_filename,point = (0.5,0.5)):
     pos =pos.to_list()
     point = gl_to_imge([pos[0]/pos[2],pos[1]/pos[2]])
     center = ( point[0],point[1])
-    # utils.drawdots(image,[center])
-    # cv2.imshow('image',image)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    if(show):
+        utils.drawdots(image,[(center[0]*w,center[1]*h)])
+        print(center)
+        cv2.imshow('image',image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
     return center
     
 
 
-# point = (0.4,0.6)
-# load_and_display_mainImageAndCenter('test/img/cinema1.jpeg',point)
-# load_and_display_trsnformed_image('dataset/img/output2.png','dataset/trans/output2.pkl',point)
+point = (0.4,0.6)
+load_and_display_mainImageAndCenter('test/img/cinema1.jpeg',point)
+load_and_display_trsnformed_image('dataset/img/output2.png','dataset/trans/output2.pkl',point,True)
