@@ -1,4 +1,4 @@
-import glfw
+# import glfw
 from OpenGL.GL import *
 import numpy as np
 import glm as m
@@ -14,7 +14,7 @@ def gl_to_imge(point):
     return((point[0]+ 1)/2,(1 - point[1])/2)
 
 def load_and_display_mainImageAndCenter(filename,point = (0.5,0.5)): # point from top left corner image coordinte system
-    image = cv2.imread(filename)
+    image = cv2.imread(filename) 
     h,w,_ = image.shape
     center = (w * point[0],h*point[1])
     

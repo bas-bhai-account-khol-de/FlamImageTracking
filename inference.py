@@ -31,7 +31,7 @@ def plot_losses(train_file_path, val_file_path, point, groundtruth, input_shape)
     with open(val_file_path, 'r') as file:
         val_lines = file.readlines()
     
-    probability = str(np.float16(point[0,:,0]))
+    probability = str(np.clip(np.float16(point[0,:,0]), 0.0, 1.0))
     transformed_point = np.array((point[0,:,1], point[0,:,2]), dtype=np.int16)
     GT_probability = str(np.float16(groundtruth[0,:,0]))
     GT_transformed_point = np.array((groundtruth[0,:,1]*(input_shape[2]-1) ,groundtruth[0,:,2]*(input_shape[1]-1)), dtype = np.int16)
@@ -111,7 +111,7 @@ while True:
     inputs[0] = np.array(inputs[0]*255, dtype=np.uint8)
     inputs[1] = np.array(inputs[1]*255, dtype=np.uint8)
     display_heatmaps(ground_truths, transformed_points)
-    plot_losses(train_losses_file, val_losses_file, transformed_points_as_array, ground_truths, inputs[1].shape)
+    # plot_losses(train_losses_file, val_losses_file, transformed_points_as_array, ground_truths, inputs[1].shape)
     display_image(inputs[1], transformed_points_as_array)
     # Wait for a key press
     key = cv2.waitKey(0)  # Wait indefinitely for a key press

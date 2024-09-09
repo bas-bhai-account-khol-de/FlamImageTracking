@@ -169,7 +169,9 @@ def process_GT(probability_true, key_points_true):
                 GT[img, :, :, kp] = gt
                 
     return GT
-    
+ 
+
+   
 def custom_loss(y_true, y_pred, is_val = False):
     probability_true, key_points_true = y_true[:,:,0], y_true[:,:,1:] 
     GT = process_GT(probability_true, key_points_true)

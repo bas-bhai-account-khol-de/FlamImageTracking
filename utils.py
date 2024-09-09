@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 
+#to resize wihtout changing the aspect ratio
 def resizeRatio(img  ,W):
     W = int(W)
     h,w,_  = img.shape
@@ -17,17 +18,20 @@ def resizeRatio(img  ,W):
 
 def createTrasnform():
     
+    #rotate around the three axes (X, Y, and Z).
     roation = 15
-    roation1 =0
-    rotMatz =m.rotate(roation/2,m.vec3(0,0,1))
+    roation1 =0 
+    rotMatz =m.rotate(roation/2,m.vec3(0,0,1)) 
     rotMaty =m.rotate(roation/3,m.vec3(0,1,0))
     rotMatx =m.rotate(-0.01,m.vec3(1,0,0))
 
+    #move object in X Y Z minus sign  (move x to left, y to down, z to move backward)
     tranx= m.translate(m.vec3(-(roation%3)/6,0,0))
     trany = m.translate(m.vec3(0,-2*(roation%3)/6,0))
-    tranz =  m.translate(m.vec3(0,0,-5))
+    tranz =  m.translate(m.vec3(0,0,-5)) #moving away from camera
 
-    pers = m.perspective(m.radians(50),1,0.01,40)
+    #degreestorad,aspectratio,nearnfarclipping
+    pers = m.perspective(m.radians(50),1,0.01,40) 
     
     # test = m.mat4([[-0.5,-0.5,0,1],[ 0.5, -0.5,0,1],[ 0.5, 0.5,0,1],[-0.5, 0.5,0,1]])
     # test=m.transpose(test)
@@ -35,6 +39,7 @@ def createTrasnform():
 
     transmat =  pers  * tranz * rotMatx 
     # transmat =  rotMatx 
+    #applies the transformation to a point in 3D space
     test2 = transmat * m.vec4(0.5,0.5,0,1)
     # test = transmat * test
     # global roation
@@ -65,19 +70,15 @@ def drawdots(img ,points ):
 
 
 
-def applyTransform(image , points , trasnform):
+def applyTransform(image , points , transform):
      pointset = points[:4]
      p = m.mat4(points)
-     final  =  trasnform * p
-     
-     
+     final  =  transform * p
+
      print("--------")
      
-     
      pointset =  final.to_list()
-     
      pointset = [ [x[0]/x[2],x[1]/x[2]] for x in pointset]
-     
      
      o_points = points[:4]
      o_points = [[x[0],x[1]] for x in o_points]
@@ -85,8 +86,6 @@ def applyTransform(image , points , trasnform):
      print(homo)
      warped  = cv2.warpPerspective(image,homo,(image.shape[1],image.shape[0]))
      return warped
-     
-     
      
      
     

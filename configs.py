@@ -33,12 +33,12 @@ Configurations = {
       "val_batch_size": 10,
       "val_epoch_threshold": 100,
       "val_drop_threshold": 0,
-      "learning_rate": 0.0001,
+      "learning_rate": 0.001,   #keep 0.001
       "seed" : 12345,  
     },
     
     "inference_configs": {
         "colours": [[0,0,255],[0,255,0],[255,0,0],[255,255,0],[255,0,255],[0,255,255]],
-        "inference_thresh": 0.5,
+        "inference_thresh": 0.8,
     }
 }
